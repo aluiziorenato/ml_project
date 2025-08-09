@@ -1,12 +1,13 @@
-version: '3.8'
+version: "3.8"
+
 services:
   db:
     image: postgres:15
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ml_db
+      POSTGRES_USER: usuario
+      POSTGRES_PASSWORD: senha
+      POSTGRES_DB: nome_do_banco
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -14,6 +15,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
+    restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -25,27 +27,33 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
     environment:
-      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
-      - ML_CLIENT_ID=${ML_CLIENT_ID}
-      - ML_CLIENT_SECRET=${ML_CLIENT_SECRET}
-      - APP_BASE_URL=${APP_BASE_URL}
-      - SECRET_KEY=${SECRET_KEY}
-      - FRONTEND_ORIGIN=${FRONTEND_ORIGIN}
+      # Garante que DATABASE_URL usa o host 'db' para o container backend conectar ao Postgres
+       DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+
+
+
+
     ports:
       - "8000:8000"
     depends_on:
       - db
-    volumes:
-      - ./backend:/app
 
   frontend:
     build:
       context: ./frontend
-    ports:
-      - "3000:3000"
+      dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
-      - VITE_BACKEND_URL=http://localhost:8000
+      # Se o frontend se comunica com o backend dentro do Docker, pode ser http://backend:8000
+      # Se rodar no host, localhost funciona
+      VITE_BACKEND_URL: http://localhost:8000
+    ports:
+      - "3000:80"
     depends_on:
       - backend
 

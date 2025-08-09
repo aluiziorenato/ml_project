@@ -1,15 +1,17 @@
-fastapi==0.95.2
-uvicorn[standard]==0.22.0
-httpx==0.24.1
-python-dotenv==1.0.0
-sqlmodel==0.0.8
-alembic==1.12.0
-pydantic==1.10.9
-cryptography==41.0.3
-python-multipart==0.0.6
-passlib[bcrypt]==1.7.4
-python-jose==3.3.0
-psycopg2-binary==2.9.6
-pytest==7.4.0
-pytest-asyncio==0.22.0
-requests==2.31.0
+# Criptografia e segurança
+ecdsa==0.19.1           # Algoritmo de assinatura digital baseado em curvas elípticas
+httpx
+rsa==4.9.1              # Implementação de RSA para criptografia e assinatura
+pyasn1==0.6.1           # ASN.1 para codificação/decodificação de estruturas de dados
+python-jose==3.5.0      # JWT e JWS com suporte a JOSE (JSON Object Signing and Encryption)
+fastapi
+uvicorn[standard]
+pydantic-settings
+psycopg2-binary
+SQLAlchemy
+sqlmodel>=0.0.22
+python-dotenv
+passlib
+python-multipart
+# Compatibilidade
+six==1.17.0             # Compatibilidade entre Python 2 e 3 (pode ser removido se usar apenas Python 3.6+)
