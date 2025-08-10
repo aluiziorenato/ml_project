@@ -4,7 +4,12 @@ from app.db import get_session
 from app.models import User
 from fastapi.security import OAuth2PasswordRequestForm
 from app.schemas import UserCreate, TokenResponse
-from app.core.security import get_password_hash, verify_password, create_access_token, create_refresh_token
+from app.core.security import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
