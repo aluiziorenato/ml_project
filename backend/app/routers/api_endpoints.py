@@ -5,6 +5,7 @@ from ..schemas import ApiEndpointCreate, ApiEndpointRead
 from ..models import ApiEndpoint
 from ..crud.endpoints import create_endpoint, get_endpoint, list_endpoints, update_endpoint, delete_endpoint
 from ..auth import get_current_user
+from ..database import Base
 
 router = APIRouter(prefix="/api/endpoints", tags=["endpoints"])
 
