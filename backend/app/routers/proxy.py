@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from ..db import get_session
-from ..services.mercadolibre import proxy_api_request
+##from ..services.mercadolibre import proxy_api_request
 from ..models import OAuthSession
 from ..auth import get_current_user
 

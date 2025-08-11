@@ -1,6 +1,7 @@
 # backend/app/core/security.py
 from datetime import datetime, timedelta
 from typing import Optional
+
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
@@ -49,7 +50,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
         email: str = payload.get("sub")
-        if not email:
+        if email is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
