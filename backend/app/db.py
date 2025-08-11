@@ -1,8 +1,7 @@
 # backend/app/db.py
 from time import sleep
 from typing import Generator
-
-from sqlmodel import SQLModel, create_engine, Session, select
+from sqlmodel import create_engine, SQLModel, Session, select
 from sqlalchemy.exc import OperationalError
 
 from app.config import settings
@@ -23,7 +22,7 @@ def _wait_for_db(max_retries: int = 10, delay: float = 1.0):
     para lidar com a janela de startup do container Postgres.
     """
     last_exc = None
-    for i in range(max_retries):
+    for _ in range(max_retries):
         try:
             with engine.connect() as conn:
                 conn.execute(select(1))  # apenas para forçar a conexão
@@ -42,18 +41,16 @@ def init_db():
     # espera DB ficar pronto (melhora estabilidade no Docker)
     _wait_for_db(max_retries=20, delay=1.0)
 
-    # importa modelos aqui (evita import circular em tempo de import)
-    from app.models import SQLModel as _SQLModel  # apenas para referência (não estritamente necessário)
+    # importa modelos aqui (evita import circular)
     from app.models import User
 
     # cria tabelas
     SQLModel.metadata.create_all(engine)
 
-    # cria usuário admin padrão se não existir (email: admin@example.com / senha: changeme)
+    # cria usuário admin padrão se não existir
     with Session(engine) as session:
         existing = session.exec(select(User).where(User.email == "admin@example.com")).first()
         if not existing:
-            # usa passlib localmente aqui (não impor dependência circular)
             from passlib.context import CryptContext
             pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
             hashed = pwd_context.hash("changeme")
