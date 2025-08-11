@@ -4,14 +4,14 @@ from typing import Optional
 from sqlmodel import Session
 from uuid import uuid4
 
-from ..services.mercadolibre import (
+from app.services.mercadolibre import (
     build_authorization_url,
     exchange_code_for_token,
     generate_code_verifier,
     generate_code_challenge,
 )
-from ..crud.oauth_sessions import save_oauth_session, get_oauth_session, delete_oauth_session
-from ..db import get_session
+from app.crud.oauth_sessions import save_oauth_session, get_oauth_session, delete_oauth_session
+from app.db import get_session
 
 router = APIRouter(prefix="/api/oauth", tags=["oauth"])
 
@@ -33,6 +33,15 @@ def login(state: Optional[str] = None, session: Session = Depends(get_session)):
     save_oauth_session(session, state, code_verifier)
 
     url = build_authorization_url(state=state, code_challenge=code_challenge)
+
+    # Garantir que state não seja None na URL
+    if state is None or state.lower() == "none":
+        url = url.replace("&state=None", "").replace("state=None&", "").replace("state=None", "")
+
+    # Logar a URL no console para debug
+    print("\n🔗 URL de autorização do Mercado Livre:")
+    print(url, "\n")
+
     return RedirectResponse(url)
 
 @router.get("/callback")
@@ -41,7 +50,7 @@ async def callback(
     state: Optional[str] = None,
     session: Session = Depends(get_session),
 ):
-    from ..services.mercadolibre import save_token_to_db  # import local para evitar loop
+    from app.services.mercadolibre import save_token_to_db  # import local para evitar loop
 
     """
     Callback do ML após autorização:

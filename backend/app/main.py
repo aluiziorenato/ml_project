@@ -5,6 +5,13 @@ from .routers import api_endpoints, api_tests, oauth, auth, proxy
 from .config import settings
 from app.routers import meli_routes
 
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(name)s %(levelname)s %(message)s",
+)
+
 
 app = FastAPI(title="ML Integration Backend")
 app.include_router(auth.router)

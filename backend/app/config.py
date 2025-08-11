@@ -1,5 +1,18 @@
 # backend/app/config.py
 from pydantic_settings import BaseSettings
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+OAUTH_CALLBACK_PATH = os.getenv("OAUTH_CALLBACK_PATH", "/api/oauth/callback")
+
+# URL final de retorno
+
+REDIRECT_URI = f"{BASE_URL}{OAUTH_CALLBACK_PATH}"
+MERCADO_LIBRE_APP_ID = os.getenv("MERCADO_LIBRE_APP_ID")
+MERCADO_LIBRE_SECRET = os.getenv("MERCADO_LIBRE_SECRET")
 
 class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg2://postgres:postgres@db:5432/ml_db"
