@@ -1,0 +1,330 @@
+analise essa url: https://auth.mercadolibre.com.br/authorization?response_type=code&client_id=6377568852501213&redirect_uri=https%3A%2F%2F53c1c7c61049.ngrok-free.app%2Fapi%2Foauth%2Fcallback&site_id=MLB&code_challenge=6_NDmX9-tGAciGA2267ZWyoiqYrECog03vP2ZfkNG9o&code_challenge_method=S256&state=fb6bb8f8-33f4-46bb-8eba-339cff79d631
+
+agora compare a formação dela com os seguintes códigos:
+.env
+# =============================================================================
+# backend/.env  — Variáveis de ambiente para o BACKEND
+# =============================================================================
+
+# -----------------------------
+# Database (usado pelo backend)
+# -----------------------------
+# Nota: ajuste se seu docker-compose usa outros user/password/db
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/db-1
+
+# -----------------------------
+# Mercado Livre (OAuth) — app
+# -----------------------------
+# Estes valores vieram do painel do Mercado Livre (ID / secret / redirect URI)
+ML_CLIENT_ID=6377568852501213
+ML_CLIENT_SECRET=MKxO9QvJvpg7ivkW7lYbN1nCwbjw6J6l
+
+# URI de redirect PRINCIPAL — deve ser IDÊNTICA à registrada no painel ML.
+# O seu painel mostrava: https://53c1c7c61049.ngrok-free.app/
+# Use exatamente essa se o app no ML estiver cadastrado com ela.
+ML_REDIRECT_URI=https://a2ccef5d898a.ngrok-free.app/api/oauth/callback
+# Opcional: URI local para DEV (utilize apenas se você registrar esta URI no painel ML)
+# ML não aceitará esse valor a menos que você o adicione nos URIs de redirect do app ML.
+ML_REDIRECT_URI_LOCAL=https://localhost:8000/api/oauth/callback
+
+# Endpoints do Mercado Livre
+ML_AUTH_URL=https://auth.mercadolibre.com.br/authorization
+ML_TOKEN_URL=http://api.mercadolibre.com/oauth/token
+ML_SITE_ID=MLB
+
+# Scopes desejados (ajuste conforme permissões que você selecionou no painel)
+ML_SCOPES=offline_access read write
+
+# ==============================
+# PKCE (recomendado / ativo no painel)
+# ==============================
+# O painel indicou "PKCE necessário" — deixe true e implemente PKCE no backend.
+ML_USE_PKCE=true
+# Método de challenge (normalmente S256)
+PKCE_CODE_CHALLENGE_METHOD=S256
+# Observação: NÃO fixe um CODE_VERIFIER em .env para produção.
+# O code_verifier deve ser gerado dinamicamente por authorization request e armazenado por sessão (db/cookie).
+# (Ex.: gerar base64-url 43..128 bytes, calcular SHA256 e base64-url => code_challenge)
+
+# -----------------------------
+# Application URLs
+# -----------------------------
+# URL pública do backend (use a do ngrok em produção dev)
+
+BASE_URL=https://a2ccef5d898a.ngrok-free.app
+OAUTH_CALLBACK_PATH=/api/oauth/callback
+MERCADO_LIBRE_APP_ID=SEU_APP_ID
+MERCADO_LIBRE_SECRET=SEU_APP_SECRET
+
+FRONTEND_ORIGIN=http://localhost:3000
+
+# URL interna entre containers (quando o frontend/backend chamam internamente no Docker)
+BACKEND_INTERNAL_URL=http://backend:8000
+
+# -----------------------------
+# JWT / Segurança
+# -----------------------------
+SECRET_KEY=43412b4f578bc4fa5dbe72897926a19b3dc04ebc5f7bb56df0d3578e4eb900d9
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# -----------------------------
+# Runtime / Misc
+# -----------------------------
+ENV=development
+
+# Workaround para aviso de depreciação do pkg_resources no passlib (opcional)
+SETUPTOOLS_USE_PKG_RESOURCES=false
+mercadolibre.py
+# backend/app/services/mercadolibre.py
+import os
+import base64
+import hashlib
+import secrets
+import logging
+from urllib.parse import urlencode
+from typing import Optional, Dict, Any
+from datetime import datetime, timedelta
+
+import httpx
+import requests
+from fastapi import HTTPException
+from sqlmodel import Session, select
+
+from app.models.meli_token import MeliToken
+from app.db import engine
+
+logger = logging.getLogger("mercadolibre")
+logger.setLevel(logging.INFO)
+
+ML_CLIENT_ID: str = os.getenv("ML_CLIENT_ID", "")
+ML_CLIENT_SECRET: str = os.getenv("ML_CLIENT_SECRET", "")
+ML_REDIRECT_URI: str = os.getenv("ML_REDIRECT_URI", "")
+ML_AUTH_URL: str = os.getenv("ML_AUTH_URL", "https://auth.mercadolibre.com/authorization")
+ML_TOKEN_URL: str = os.getenv("ML_TOKEN_URL", "https://api.mercadolibre.com/oauth/token")
+ML_SITE_ID: str = os.getenv("ML_SITE_ID", "MLB")
+
+
+# PKCE helpers
+def generate_code_verifier(length: int = 64) -> str:
+    if length < 43:
+        length = 43
+    if length > 128:
+        length = 128
+    verifier = secrets.token_urlsafe(length)
+    return verifier[:length]
+
+
+def generate_code_challenge(code_verifier: str) -> str:
+    digest = hashlib.sha256(code_verifier.encode("utf-8")).digest()
+    challenge = base64.urlsafe_b64encode(digest).decode("utf-8").rstrip("=")
+    return challenge
+
+
+# Authorization URL builder
+def build_authorization_url(state: str, code_challenge: str, redirect_uri: Optional[str] = None, site_id: Optional[str] = None) -> str:
+    redirect = redirect_uri or ML_REDIRECT_URI
+    site = site_id or ML_SITE_ID
+
+    params = {
+        "response_type": "code",
+        "client_id": ML_CLIENT_ID,
+        "redirect_uri": redirect,
+        "site_id": site,
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
+        "state": state,
+    }
+    return f"{ML_AUTH_URL}?{urlencode(params)}"
+
+
+# Exchange code -> token
+async def exchange_code_for_token(code: str, code_verifier: str, redirect_uri: Optional[str] = None) -> Dict[str, Any]:
+    redirect = redirect_uri or ML_REDIRECT_URI
+    data = {
+        "grant_type": "authorization_code",
+        "client_id": ML_CLIENT_ID,
+        "client_secret": ML_CLIENT_SECRET,
+        "code": code,
+        "redirect_uri": redirect,
+        "code_verifier": code_verifier,
+    }
+
+    logger.info("Exchanging code for token; POST %s", ML_TOKEN_URL)
+    logger.debug("Token request payload: %s", {k: ("<hidden>" if k == "client_secret" else v) for k, v in data.items()})
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            resp = await client.post(ML_TOKEN_URL, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+            resp.raise_for_status()
+            logger.info("Token exchange success (status=%s)", resp.status_code)
+            return resp.json()
+        except httpx.HTTPStatusError as exc:
+            text = exc.response.text
+            logger.error("Token exchange HTTP error %s: %s", exc.response.status_code, text)
+            raise HTTPException(status_code=502, detail=f"token exchange failed: {text}")
+        except Exception as exc:
+            logger.exception("Unexpected error during token exchange")
+            raise HTTPException(status_code=502, detail=f"token exchange failed: {exc}")
+
+
+# Refresh token
+async def refresh_access_token(refresh_token: str) -> Dict[str, Any]:
+    data = {
+        "grant_type": "refresh_token",
+        "client_id": ML_CLIENT_ID,
+        "client_secret": ML_CLIENT_SECRET,
+        "refresh_token": refresh_token,
+    }
+    logger.info("Refreshing access token")
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(ML_TOKEN_URL, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+        resp.raise_for_status()
+        return resp.json()
+
+
+# Save token to DB
+def _save_or_update_token(session: Session, tokens: dict, user_id: Optional[int], expires_at):
+    existing = None
+    if user_id is not None:
+        existing = session.exec(select(MeliToken).where(MeliToken.user_id == user_id)).first()
+
+    if existing is None:
+        token = MeliToken(
+            user_id=user_id,
+            access_token=tokens.get("access_token"),
+            refresh_token=tokens.get("refresh_token"),
+            token_type=tokens.get("token_type"),
+            scope=tokens.get("scope"),
+            expires_at=expires_at,
+        )
+        session.add(token)
+    else:
+        existing.access_token = tokens.get("access_token")
+        existing.refresh_token = tokens.get("refresh_token")
+        existing.token_type = tokens.get("token_type")
+        existing.scope = tokens.get("scope")
+        existing.expires_at = expires_at
+    session.commit()
+
+
+def save_token_to_db(tokens: dict, user_id: Optional[int] = None, session: Optional[Session] = None):
+    expires_at = None
+    if "expires_in" in tokens and tokens.get("expires_in") is not None:
+        try:
+            expires_at = datetime.utcnow() + timedelta(seconds=int(tokens["expires_in"]))
+        except Exception:
+            expires_at = None
+
+    if session is not None:
+        _save_or_update_token(session, tokens, user_id, expires_at)
+    else:
+        with Session(engine) as s:
+            _save_or_update_token(s, tokens, user_id, expires_at)
+
+
+# Proxy helper (opcional)
+def proxy_api_request(method: str, url: str, headers=None, data=None, json_body=None):
+    try:
+        resp = requests.request(method, url, headers=headers, data=data, json=json_body, timeout=15.0)
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as e:
+        logger.error("Proxy request failed: %s", e)
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+__all__ = [
+    "generate_code_verifier",
+    "generate_code_challenge",
+    "build_authorization_url",
+    "exchange_code_for_token",
+    "refresh_access_token",
+    "save_token_to_db",
+    "proxy_api_request",
+]
+oauth.py
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse, JSONResponse
+from typing import Optional
+from sqlmodel import Session
+from uuid import uuid4
+
+from app.services.mercadolibre import (
+    build_authorization_url,
+    exchange_code_for_token,
+    generate_code_verifier,
+    generate_code_challenge,
+)
+from app.crud.oauth_sessions import save_oauth_session, get_oauth_session, delete_oauth_session
+from app.db import get_session
+
+router = APIRouter(prefix="/api/oauth", tags=["oauth"])
+
+@router.get("/login")
+def login(state: Optional[str] = None, session: Session = Depends(get_session)):
+    """
+    Inicia fluxo OAuth com PKCE:
+    - gera state se não informado
+    - gera code_verifier e code_challenge
+    - salva state + code_verifier no banco
+    - retorna redirect para Mercado Livre com code_challenge
+    """
+    if not state:
+        state = str(uuid4())  # gera state aleatório
+
+    code_verifier = generate_code_verifier()
+    code_challenge = generate_code_challenge(code_verifier)
+
+    save_oauth_session(session, state, code_verifier)
+
+    url = build_authorization_url(state=state, code_challenge=code_challenge)
+
+    # Garantir que state não seja None na URL
+    if state is None or state.lower() == "none":
+        url = url.replace("&state=None", "").replace("state=None&", "").replace("state=None", "")
+
+    # Logar a URL no console para debug
+    print("\n🔗 URL de autorização do Mercado Livre:")
+    print(url, "\n")
+
+    return RedirectResponse(url)
+
+@router.get("/callback")
+async def callback(
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    session: Session = Depends(get_session),
+):
+    from app.services.mercadolibre import save_token_to_db  # import local para evitar loop
+
+    """
+    Callback do ML após autorização:
+    - valida presence de code e state
+    - recupera code_verifier do banco usando state
+    - troca código por token usando code_verifier
+    - deleta sessão OAuth
+    - salva token no banco
+    - retorna tokens para frontend
+    """
+    if not code or not state:
+        raise HTTPException(status_code=400, detail="Missing code or state")
+
+    oauth_session = get_oauth_session(session, state)
+    if not oauth_session:
+        raise HTTPException(status_code=400, detail="Invalid or expired state")
+
+    try:
+        tokens = await exchange_code_for_token(code, oauth_session.code_verifier)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"token exchange failed: {e}")
+
+    delete_oauth_session(session, state)
+    save_token_to_db(tokens, user_id=None, session=session)
+
+    return JSONResponse(
+        {"status": "ok", "tokens": {"access_token": tokens.get("access_token")}}
+    )
+
+

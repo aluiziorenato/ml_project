@@ -1,17 +1,22 @@
+# backend/app/api/oauth.py
+import os
+from uuid import uuid4
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
-from typing import Optional
 from sqlmodel import Session
-from uuid import uuid4
 
 from app.services.mercadolibre import (
     build_authorization_url,
     exchange_code_for_token,
     generate_code_verifier,
     generate_code_challenge,
+    save_token_to_db
 )
 from app.crud.oauth_sessions import save_oauth_session, get_oauth_session, delete_oauth_session
 from app.db import get_session
+
+ML_REDIRECT_URI = os.getenv("ML_REDIRECT_URI")
 
 router = APIRouter(prefix="/api/oauth", tags=["oauth"])
 
@@ -25,22 +30,18 @@ def login(state: Optional[str] = None, session: Session = Depends(get_session)):
     - retorna redirect para Mercado Livre com code_challenge
     """
     if not state:
-        state = str(uuid4())  # gera state aleatório
+        state = str(uuid4())
 
     code_verifier = generate_code_verifier()
     code_challenge = generate_code_challenge(code_verifier)
 
     save_oauth_session(session, state, code_verifier)
 
-    url = build_authorization_url(state=state, code_challenge=code_challenge)
-
-    # Garantir que state não seja None na URL
-    if state is None or state.lower() == "none":
-        url = url.replace("&state=None", "").replace("state=None&", "").replace("state=None", "")
-
-    # Logar a URL no console para debug
-    print("\n🔗 URL de autorização do Mercado Livre:")
-    print(url, "\n")
+    url = build_authorization_url(
+        state=state,
+        code_challenge=code_challenge,
+        redirect_uri=ML_REDIRECT_URI
+    )
 
     return RedirectResponse(url)
 
@@ -50,8 +51,6 @@ async def callback(
     state: Optional[str] = None,
     session: Session = Depends(get_session),
 ):
-    from app.services.mercadolibre import save_token_to_db  # import local para evitar loop
-
     """
     Callback do ML após autorização:
     - valida presence de code e state
@@ -62,20 +61,28 @@ async def callback(
     - retorna tokens para frontend
     """
     if not code or not state:
-        raise HTTPException(status_code=400, detail="Missing code or state")
+        raise HTTPException(status_code=400, detail="Código ou estado ausente")
 
     oauth_session = get_oauth_session(session, state)
     if not oauth_session:
-        raise HTTPException(status_code=400, detail="Invalid or expired state")
+        raise HTTPException(status_code=400, detail="State inválido ou expirado")
 
     try:
-        tokens = await exchange_code_for_token(code, oauth_session.code_verifier)
+        tokens = await exchange_code_for_token(
+            code,
+            oauth_session.code_verifier,
+            redirect_uri=ML_REDIRECT_URI
+        )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"token exchange failed: {e}")
+        raise HTTPException(status_code=502, detail=f"Falha ao trocar código por token: {e}")
 
     delete_oauth_session(session, state)
     save_token_to_db(tokens, user_id=None, session=session)
 
-    return JSONResponse(
-        {"status": "ok", "tokens": {"access_token": tokens.get("access_token")}}
-    )
+    return JSONResponse({
+        "status": "ok",
+        "tokens": {
+            "access_token": tokens.get("access_token"),
+            "refresh_token": tokens.get("refresh_token")
+        }
+    })
