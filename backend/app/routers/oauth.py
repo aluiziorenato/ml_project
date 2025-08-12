@@ -13,7 +13,11 @@ from app.services.mercadolibre import (
     generate_code_challenge,
     save_token_to_db
 )
-from app.crud.oauth_sessions import save_oauth_session, get_oauth_session, delete_oauth_session
+from app.crud.oauth_sessions import (
+    save_oauth_session,
+    get_oauth_session,
+    delete_oauth_session
+)
 from app.db import get_session
 
 ML_REDIRECT_URI = os.getenv("ML_REDIRECT_URI")
@@ -23,11 +27,7 @@ router = APIRouter(prefix="/api/oauth", tags=["oauth"])
 @router.get("/login")
 def login(state: Optional[str] = None, session: Session = Depends(get_session)):
     """
-    Inicia fluxo OAuth com PKCE:
-    - gera state se não informado
-    - gera code_verifier e code_challenge
-    - salva state + code_verifier no banco
-    - retorna redirect para Mercado Livre com code_challenge
+    Inicia fluxo OAuth com PKCE.
     """
     if not state:
         state = str(uuid4())
@@ -37,28 +37,23 @@ def login(state: Optional[str] = None, session: Session = Depends(get_session)):
 
     save_oauth_session(session, state, code_verifier)
 
-    url = build_authorization_url(
+    authorization_url = build_authorization_url(
         state=state,
         code_challenge=code_challenge,
         redirect_uri=ML_REDIRECT_URI
     )
 
-    return RedirectResponse(url)
+    return RedirectResponse(url=authorization_url)
+
 
 @router.get("/callback")
-async def callback(
+async def oauth_callback(
     code: Optional[str] = None,
     state: Optional[str] = None,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session)
 ):
     """
-    Callback do ML após autorização:
-    - valida presence de code e state
-    - recupera code_verifier do banco usando state
-    - troca código por token usando code_verifier
-    - deleta sessão OAuth
-    - salva token no banco
-    - retorna tokens para frontend
+    Callback do Mercado Livre após autorização.
     """
     if not code or not state:
         raise HTTPException(status_code=400, detail="Código ou estado ausente")
