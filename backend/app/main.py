@@ -4,15 +4,18 @@ from .db import init_db
 from .routers import api_endpoints, api_tests, oauth, auth, proxy
 from .config import settings
 from app.routers import meli_routes
-
+from app.startup import create_admin_user
 import logging
+
+
+
 
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
 )
 
-
+app = FastAPI()
 app = FastAPI(title="ML Integration Backend")
 app.include_router(auth.router)
 app.add_middleware(
@@ -35,6 +38,10 @@ app.include_router(proxy.router)
 def on_startup():
     init_db()
 
+@app.on_event("startup")
+def startup_event():
+    create_admin_user()
+    
 @app.get("/health")
 def health():
     return {"status": "ok"}
