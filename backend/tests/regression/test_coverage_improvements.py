@@ -18,15 +18,16 @@ class TestCoverageImprovements:
 
     def test_startup_create_admin_user_coverage(self):
         """Test startup admin user creation with mocked dependencies."""
-        with patch('app.startup.get_session') as mock_get_session, \
+        with patch('app.startup.Session') as mock_session_class, \
              patch('app.startup.select') as mock_select, \
-             patch('app.startup.User') as mock_user, \
-             patch('app.startup.get_password_hash') as mock_hash:
+             patch('app.startup.User') as mock_user_class, \
+             patch('app.startup.get_password_hash') as mock_hash, \
+             patch.dict('os.environ', {'ADMIN_EMAIL': 'test@admin.com', 'ADMIN_PASSWORD': 'testpass'}):
             
             # Mock session context manager
             mock_session = MagicMock()
-            mock_get_session.return_value.__enter__.return_value = mock_session
-            mock_get_session.return_value.__exit__.return_value = None
+            mock_session_class.return_value.__enter__.return_value = mock_session
+            mock_session_class.return_value.__exit__.return_value = None
             
             # Mock no existing admin user
             mock_session.exec.return_value.first.return_value = None
