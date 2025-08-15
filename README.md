@@ -165,15 +165,78 @@ O backend utiliza OAuth2 para autenticação com Mercado Libre.
 3. Após login, é redirecionado para `/api/oauth/callback`
 4. O backend salva o token de acesso
 
-### Endpoints
+### Endpoints de Autenticação
 
 | Método | Rota                    | Descrição                          |
 |--------|-------------------------|------------------------------------|
 | GET    | `/api/oauth/login`      | Inicia autenticação OAuth          |
 | GET    | `/api/oauth/callback`   | Recebe token do Mercado Libre      |
 
-> ⚠️ Você deve registrar sua aplicação em [Mercado Libre Developers](https://developers.mercadolibre.com.ar/) e configurar a Redirect URI como:
-> `http://localhost:8000/api/oauth/callback`
+### Endpoints de Dados Mercado Libre
+
+| Método | Rota              | Descrição                                    |
+|--------|-------------------|----------------------------------------------|
+| GET    | `/meli/tokens`    | Obtém informações dos tokens salvos         |
+| GET    | `/meli/user`      | Obtém dados do usuário autenticado          |
+| GET    | `/meli/products`  | Obtém produtos do vendedor autenticado      |
+
+### Configuração Mercado Libre
+
+1. **Registre sua aplicação** em [Mercado Libre Developers](https://developers.mercadolibre.com.ar/)
+
+2. **Configure as variáveis no .env**:
+   ```bash
+   ML_CLIENT_ID=seu-client-id-aqui
+   ML_CLIENT_SECRET=seu-client-secret-aqui  
+   ML_REDIRECT_URI=http://localhost:8000/api/oauth/callback
+   ```
+
+3. **Configure a Redirect URI** na sua aplicação ML como:
+   ```
+   http://localhost:8000/api/oauth/callback
+   ```
+
+### Testando a Integração
+
+1. **Inicie a autenticação**: Acesse `http://localhost:8000/api/oauth/login`
+2. **Complete o login** no Mercado Libre
+3. **Teste os endpoints**:
+   - `GET /meli/user` - Dados do usuário
+   - `GET /meli/products` - Produtos do vendedor
+
+### Exemplos de Resposta
+
+**GET /meli/user**:
+```json
+{
+  "success": true,
+  "user": {
+    "id": 123456789,
+    "nickname": "TESTE_USER",
+    "email": "user@email.com",
+    "country_id": "BR",
+    "site_id": "MLB"
+  }
+}
+```
+
+**GET /meli/products**:
+```json
+{
+  "success": true,
+  "user_id": 123456789,
+  "products": {
+    "results": ["MLB123456789", "MLB987654321"],
+    "paging": {
+      "total": 2,
+      "offset": 0,
+      "limit": 50
+    }
+  }
+}
+```
+
+> ⚠️ **Importante**: Certifique-se de que o token OAuth2 esteja salvo no banco antes de usar os endpoints `/meli/user` e `/meli/products`.
 
 ---
 
