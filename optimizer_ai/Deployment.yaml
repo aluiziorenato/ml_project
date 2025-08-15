@@ -1,0 +1,168 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-project
+  labels:
+    name: ml-project
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: optimizer-ai
+  namespace: ml-project
+  labels:
+    app: optimizer-ai
+    component: ai-service
+    version: v1.0.0
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: optimizer-ai
+  template:
+    metadata:
+      labels:
+        app: optimizer-ai
+        component: ai-service
+        version: v1.0.0
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: optimizer-ai
+        image: optimizer-ai:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8001
+          name: http
+          protocol: TCP
+        env:
+        - name: PYTHONPATH
+          value: "/app"
+        - name: PORT
+          value: "8001"
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: optimizer-ai-service
+  namespace: ml-project
+  labels:
+    app: optimizer-ai
+    component: ai-service
+spec:
+  type: ClusterIP
+  selector:
+    app: optimizer-ai
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8001
+    protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: optimizer-ai-nodeport
+  namespace: ml-project
+  labels:
+    app: optimizer-ai
+    component: ai-service
+spec:
+  type: NodePort
+  selector:
+    app: optimizer-ai
+  ports:
+  - name: http
+    port: 8001
+    targetPort: 8001
+    nodePort: 30001
+    protocol: TCP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: optimizer-ai-ingress
+  namespace: ml-project
+  labels:
+    app: optimizer-ai
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization"
+spec:
+  rules:
+  - host: optimizer-ai.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: optimizer-ai-service
+            port:
+              number: 80
+
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: optimizer-ai-hpa
+  namespace: ml-project
+  labels:
+    app: optimizer-ai
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: optimizer-ai
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
