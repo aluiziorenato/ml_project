@@ -15,5 +15,8 @@ passlib
 python-multipart
 requests
 pytest-regressions     # Snapshot testing for regression tests
+email-validator         # Email validation for Pydantic
+bcrypt                  # Better password hashing
+pytest-asyncio          # Async test support
 # Compatibilidade
 six==1.17.0             # Compatibilidade entre Python 2 e 3 (pode ser removido se usar apenas Python 3.6+)

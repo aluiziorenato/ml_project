@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 class CampaignSimulationRequest(BaseModel):
     product_name: str
