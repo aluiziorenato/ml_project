@@ -19,6 +19,7 @@ ML_CLIENT_ID = os.getenv("ML_CLIENT_ID", "")
 ML_CLIENT_SECRET = os.getenv("ML_CLIENT_SECRET", "")
 ML_AUTH_URL = os.getenv("ML_AUTH_URL", "https://auth.mercadolibre.com.br/authorization")
 ML_TOKEN_URL = os.getenv("ML_TOKEN_URL", "https://api.mercadolibre.com/oauth/token")
+ML_API_URL = os.getenv("ML_API_URL", "https://api.mercadolibre.com")
 ML_SITE_ID = os.getenv("ML_SITE_ID", "MLB")
 ML_SCOPES = os.getenv("ML_SCOPES", "offline_access read write")
 ML_USE_PKCE = os.getenv("ML_USE_PKCE", "true").lower() == "true"
@@ -124,3 +125,33 @@ def save_token_to_db(tokens: Dict, user_id: Optional[int], session: Session):
     session.commit()
     session.refresh(token_entry)
     return token_entry
+
+# ============================
+# Funções de API do Mercado Livre
+# ============================
+
+async def get_user_info(access_token: str) -> Dict:
+    """
+    Busca informações do usuário autenticado no Mercado Livre.
+    """
+    headers = {"Authorization": f"Bearer {access_token}"}
+    async with httpx.AsyncClient(timeout=20) as client:
+        logger.info("[MercadoLibre] Buscando informações do usuário")
+        response = await client.get(f"{ML_API_URL}/users/me", headers=headers)
+        response.raise_for_status()
+        user_data = response.json()
+        logger.info(f"[MercadoLibre] Dados do usuário obtidos: ID {user_data.get('id')}")
+        return user_data
+
+async def get_user_products(access_token: str, user_id: str) -> Dict:
+    """
+    Busca produtos do vendedor autenticado no Mercado Livre.
+    """
+    headers = {"Authorization": f"Bearer {access_token}"}
+    async with httpx.AsyncClient(timeout=20) as client:
+        logger.info(f"[MercadoLibre] Buscando produtos do usuário {user_id}")
+        response = await client.get(f"{ML_API_URL}/users/{user_id}/items/search", headers=headers)
+        response.raise_for_status()
+        products_data = response.json()
+        logger.info(f"[MercadoLibre] {len(products_data.get('results', []))} produtos encontrados")
+        return products_data
