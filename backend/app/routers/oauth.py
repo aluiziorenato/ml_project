@@ -16,7 +16,7 @@ from app.services.mercadolibre import (
     generate_code_verifier,
     generate_code_challenge
 )
-from app.dependencies import get_current_user  # função que retorna o usuário logado
+from app.auth import get_current_user  # função que retorna o usuário logado
 
 logger = logging.getLogger("app.oauth")
 ML_REDIRECT_URI = os.getenv("ML_REDIRECT_URI", "").rstrip("/")
