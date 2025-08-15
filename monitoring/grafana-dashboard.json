@@ -1,0 +1,181 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "ML Automation Services Dashboard",
+    "tags": ["ml", "automation", "mercado-livre"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "HTTP Requests per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{service}} - {{method}} {{endpoint}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "HTTP Response Times",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile - {{service}}"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile - {{service}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Service Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up",
+            "legendFormat": "{{service}}"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Campaign Simulations",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "simulator_campaigns_total"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Active Campaigns",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "simulator_active_campaigns"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "ML Models",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "learning_models_total"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Training Jobs",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "learning_training_jobs_active"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "A/B Tests",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "optimizer_ab_tests_total"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Running A/B Tests",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "optimizer_running_ab_tests"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Copy Templates",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "optimizer_templates_total"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Campaign Simulations by Category",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (category) (campaign_simulations_total)"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Model Predictions by Type",
+        "type": "bargraph",
+        "targets": [
+          {
+            "expr": "sum by (model_type) (model_predictions_total)"
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Copy Optimizations by Goal",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (goal) (copy_optimizations_total)"
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status_code=~\"5..\"}[5m]) / rate(http_requests_total[5m])",
+            "legendFormat": "{{service}} error rate"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Error Rate",
+            "unit": "percentunit"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "10s"
+  }
+}

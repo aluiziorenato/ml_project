@@ -1,0 +1,56 @@
+groups:
+  - name: ml_automation_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "Service {{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status_code=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} on service {{ $labels.service }}"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time on {{ $labels.service }}"
+          description: "95th percentile response time is {{ $value }}s on service {{ $labels.service }}"
+
+      - alert: TooManyTrainingJobs
+        expr: learning_training_jobs_active > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Too many active training jobs"
+          description: "There are {{ $value }} active training jobs, which may indicate a bottleneck"
+
+      - alert: LowCampaignActivity
+        expr: rate(campaign_simulations_total[1h]) < 1
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "Low campaign simulation activity"
+          description: "Campaign simulation rate is below 1 per hour for the last 30 minutes"
+
+      - alert: ABTestStuck
+        expr: optimizer_running_ab_tests > 0 and rate(ab_test_conversions_total[24h]) == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "A/B test appears to be stuck"
+          description: "Running A/B tests detected but no conversions recorded in the last 24 hours"

@@ -1,0 +1,41 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'simulator-service'
+    static_configs:
+      - targets: ['simulator-service:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'learning-service'
+    static_configs:
+      - targets: ['learning-service:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'optimizer-ai'
+    static_configs:
+      - targets: ['optimizer-ai:8003']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+rule_files:
+  - "alert_rules.yml"

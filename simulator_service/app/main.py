@@ -1,4 +1,9 @@
-from fastapi import FastAPI, HTTPException
+import sys
+import os
+# Add shared module to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'shared'))
+
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -8,6 +13,13 @@ from typing import Dict, Any, List, Optional
 import logging
 from datetime import datetime
 import uuid
+
+# Import shared modules
+from auth import add_auth_routes, require_scope, get_current_active_user, User
+from metrics import (
+    add_metrics_endpoint, setup_metrics_middleware, update_simulator_metrics,
+    track_campaign_simulation
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,6 +49,11 @@ if os.path.exists("static"):
 
 # In-memory storage for demo purposes (in production, use a database)
 campaigns_storage = {}
+
+# Setup authentication and metrics
+add_auth_routes(app)
+add_metrics_endpoint(app)
+setup_metrics_middleware(app, "simulator_service")
 
 class CampaignSimulationRequest(BaseModel):
     product_name: str
@@ -88,11 +105,17 @@ async def health_check():
     return {"status": "healthy", "service": "simulator_service"}
 
 @app.post("/api/simulate", response_model=CampaignSimulationResponse)
-async def simulate_campaign(request: CampaignSimulationRequest) -> CampaignSimulationResponse:
+async def simulate_campaign(
+    request: CampaignSimulationRequest,
+    current_user: User = Depends(require_scope("write"))
+) -> CampaignSimulationResponse:
     """
     Simulate a campaign for Mercado Libre based on input parameters
     """
-    logger.info(f"Creating simulation for product: {request.product_name}")
+    logger.info(f"Creating simulation for product: {request.product_name} by user: {current_user.username}")
+    
+    # Track metrics
+    track_campaign_simulation(request.product_category, request.target_audience)
     
     # Generate unique campaign ID
     campaign_id = f"CAM_{str(uuid.uuid4())[:8].upper()}"
@@ -175,13 +198,22 @@ async def simulate_campaign(request: CampaignSimulationRequest) -> CampaignSimul
         "response": campaign_response,
         "request": request,
         "created_at": datetime.now().isoformat(),
-        "updated_at": datetime.now().isoformat()
+        "updated_at": datetime.now().isoformat(),
+        "created_by": current_user.username
     }
+    
+    # Update metrics
+    update_simulator_metrics(campaigns_storage)
     
     return campaign_response
 
 @app.get("/api/campaigns", response_model=CampaignListResponse)
-async def list_campaigns(page: int = 1, per_page: int = 10, status: Optional[str] = None):
+async def list_campaigns(
+    page: int = 1, 
+    per_page: int = 10, 
+    status: Optional[str] = None,
+    current_user: User = Depends(require_scope("read"))
+):
     """List all campaigns with pagination and optional status filter"""
     campaigns = list(campaigns_storage.values())
     
@@ -202,7 +234,10 @@ async def list_campaigns(page: int = 1, per_page: int = 10, status: Optional[str
     )
 
 @app.get("/api/simulation/{campaign_id}", response_model=CampaignSimulationResponse)
-async def get_simulation_results(campaign_id: str):
+async def get_simulation_results(
+    campaign_id: str,
+    current_user: User = Depends(require_scope("read"))
+):
     """Get existing simulation results by campaign ID"""
     if campaign_id not in campaigns_storage:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -210,7 +245,11 @@ async def get_simulation_results(campaign_id: str):
     return campaigns_storage[campaign_id]["response"]
 
 @app.put("/api/simulation/{campaign_id}", response_model=CampaignSimulationResponse)
-async def update_campaign(campaign_id: str, update_request: CampaignUpdateRequest):
+async def update_campaign(
+    campaign_id: str, 
+    update_request: CampaignUpdateRequest,
+    current_user: User = Depends(require_scope("write"))
+):
     """Update an existing campaign"""
     if campaign_id not in campaigns_storage:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -241,19 +280,29 @@ async def update_campaign(campaign_id: str, update_request: CampaignUpdateReques
     
     campaigns_storage[campaign_id]["updated_at"] = datetime.now().isoformat()
     
+    # Update metrics
+    update_simulator_metrics(campaigns_storage)
+    
     return campaigns_storage[campaign_id]["response"]
 
 @app.delete("/api/simulation/{campaign_id}")
-async def delete_campaign(campaign_id: str):
+async def delete_campaign(
+    campaign_id: str,
+    current_user: User = Depends(require_scope("write"))
+):
     """Delete a campaign"""
     if campaign_id not in campaigns_storage:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
     del campaigns_storage[campaign_id]
+    
+    # Update metrics
+    update_simulator_metrics(campaigns_storage)
+    
     return {"message": f"Campaign {campaign_id} deleted successfully"}
 
 @app.get("/api/campaigns/stats")
-async def get_campaigns_stats():
+async def get_campaigns_stats(current_user: User = Depends(require_scope("read"))):
     """Get aggregate statistics for all campaigns"""
     if not campaigns_storage:
         return {
