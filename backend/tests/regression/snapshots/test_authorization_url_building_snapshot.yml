@@ -1,0 +1,8 @@
+base_domain: https://auth.mercadolibre.com.br/authorization
+has_client_id: false
+has_code_challenge: true
+has_redirect_uri: true
+has_scope: true
+has_state: true
+is_https: true
+param_count: 8

@@ -150,7 +150,7 @@ class TestDatabaseIntegration:
         from app.models import ApiEndpoint as MainApiEndpoint
         endpoint = MainApiEndpoint(
             name="Test Endpoint",
-            base_url="https://api.example.com",
+            url="https://api.example.com",
             auth_type="oauth",
             oauth_scope="read write"
         )
@@ -160,7 +160,7 @@ class TestDatabaseIntegration:
         
         assert endpoint.id is not None
         assert endpoint.name == "Test Endpoint"
-        assert endpoint.base_url == "https://api.example.com"
+        assert endpoint.url == "https://api.example.com"
 
 
 class TestExternalApiIntegration:

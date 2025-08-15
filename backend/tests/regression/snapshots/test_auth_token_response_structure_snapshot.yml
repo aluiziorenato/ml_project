@@ -1,0 +1,3 @@
+access_token_type: str
+has_access_token: true
+token_type: bearer

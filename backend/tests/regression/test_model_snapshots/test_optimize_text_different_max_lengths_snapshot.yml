@@ -1,0 +1,35 @@
+max_length_100:
+  cleaned: This is a product description that will be tested with different maximum
+    length constraints
+  keywords:
+  - product
+  - description
+  meta_description: This is a product description that will be tested with different
+    maximum length constraints
+  original: This is a product description that will be tested with different maximum
+    length constraints
+  slug: this-is-a-product-description-that-will-be-tested
+  title: This is a product description that will be tested with
+max_length_200:
+  cleaned: This is a product description that will be tested with different maximum
+    length constraints
+  keywords:
+  - product
+  - description
+  meta_description: This is a product description that will be tested with different
+    maximum length constraints
+  original: This is a product description that will be tested with different maximum
+    length constraints
+  slug: this-is-a-product-description-that-will-be-tested
+  title: This is a product description that will be tested with
+max_length_50:
+  cleaned: This is a product description that will be tested with different maximum
+    length constraints
+  keywords:
+  - product
+  - description
+  meta_description: This is a product description that will be...
+  original: This is a product description that will be tested with different maximum
+    length constraints
+  slug: this-is-a-product-description-that-will-be-tested
+  title: This is a product description that will be tested with
