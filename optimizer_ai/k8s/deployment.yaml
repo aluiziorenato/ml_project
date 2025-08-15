@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: optimizer-ai
+  labels:
+    app: optimizer-ai
+    component: ml-automation
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: optimizer-ai
+  template:
+    metadata:
+      labels:
+        app: optimizer-ai
+    spec:
+      containers:
+      - name: optimizer-ai
+        image: optimizer-ai:latest
+        ports:
+        - containerPort: 8003
+        env:
+        - name: PORT
+          value: "8003"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 5
+          periodSeconds: 5
