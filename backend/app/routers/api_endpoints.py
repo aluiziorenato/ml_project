@@ -23,7 +23,7 @@ def endpoint_create(
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
 ):
-    model = ApiEndpoint.from_orm(payload)
+    model = ApiEndpoint.model_validate(payload)
     return create_endpoint(session, model)
 
 
@@ -46,7 +46,7 @@ def endpoint_update(
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
 ):
-    data = payload.dict()
+    data = payload.model_dump()
     e = update_endpoint(session, endpoint_id, data)
     if not e:
         raise HTTPException(status_code=404, detail="Endpoint not found")

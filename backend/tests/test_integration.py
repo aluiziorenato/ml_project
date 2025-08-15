@@ -2,7 +2,7 @@
 Integration tests for OAuth, database, and external API calls.
 """
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock, Mock
 import httpx
 from sqlmodel import Session
 
@@ -282,9 +282,13 @@ class TestCommunicationIntegration:
             "expires_in": 3600
         }
         
-        # Just test that we can mock the exchange
-        with patch("app.services.mercadolibre.exchange_code_for_token") as mock_exchange:
-            mock_exchange.return_value = mock_token
+        # Mock the HTTP client instead of the function directly
+        with patch("httpx.AsyncClient.post") as mock_post:
+            # Mock successful response
+            mock_response = Mock()
+            mock_response.json.return_value = mock_token
+            mock_response.raise_for_status.return_value = None
+            mock_post.return_value = mock_response
             
             tokens = await exchange_code_for_token(test_code, code_verifier)
             assert tokens == mock_token

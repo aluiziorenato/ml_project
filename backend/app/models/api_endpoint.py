@@ -1,9 +1,14 @@
-from sqlalchemy import Column, Integer, String
-from app.database import Base
+from sqlmodel import SQLModel, Field
+from typing import Optional
+from datetime import datetime
 
-class ApiEndpoint(Base):
+class ApiEndpoint(SQLModel, table=True):
     __tablename__ = "api_endpoints"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    url = Column(String)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    url: Optional[str] = None
+    base_url: Optional[str] = None
+    auth_type: Optional[str] = None
+    oauth_scope: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
