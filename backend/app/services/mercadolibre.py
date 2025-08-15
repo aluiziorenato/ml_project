@@ -155,3 +155,28 @@ async def get_user_products(access_token: str, user_id: str) -> Dict:
         products_data = response.json()
         logger.info(f"[MercadoLibre] {len(products_data.get('results', []))} produtos encontrados")
         return products_data
+
+async def get_user_info(access_token: str) -> Dict:
+    """
+    Busca informações do usuário autenticado no Mercado Livre.
+    """
+    headers = {"Authorization": f"Bearer {access_token}"}
+    async with httpx.AsyncClient(timeout=20) as client:
+        logger.info("[MercadoLibre] Buscando informações do usuário")
+        response = await client.get(f"{ML_API_URL}/users/me", headers=headers)
+        response.raise_for_status()
+        user_data = response.json()
+        logger.info(f"[MercadoLibre] Usuário encontrado: {user_data.get('id', 'N/A')}")
+        return user_data
+
+async def get_categories() -> Dict:
+    """
+    Busca categorias disponíveis no Mercado Livre.
+    """
+    async with httpx.AsyncClient(timeout=20) as client:
+        logger.info("[MercadoLibre] Buscando categorias")
+        response = await client.get(f"{ML_API_URL}/sites/{ML_SITE_ID}/categories")
+        response.raise_for_status()
+        categories_data = response.json()
+        logger.info(f"[MercadoLibre] {len(categories_data)} categorias encontradas")
+        return categories_data
