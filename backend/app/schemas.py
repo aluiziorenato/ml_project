@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 
@@ -37,7 +37,7 @@ class ApiTestRead(ApiTestCreate):
     executed_at: datetime
 
 class UserCreate(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class TokenResponse(BaseModel):
