@@ -15,8 +15,62 @@ logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
 )
 
-app = FastAPI()
-app = FastAPI(title="ML Integration Backend")
+app = FastAPI(
+    title="ML Integration Backend - Mercado Livre Automation",
+    description="""
+    Sistema integrado de automação para vendas no Mercado Livre com IA e Machine Learning.
+    
+    ## Funcionalidades
+    
+    * **Autenticação JWT** - Sistema seguro de autenticação com tokens JWT
+    * **Integração Mercado Livre** - OAuth2 e APIs oficiais do Mercado Livre
+    * **Gerenciamento de Produtos** - CRUD completo de produtos
+    * **SEO e Otimização** - Ferramentas para otimização de anúncios
+    * **Testes Automatizados** - Suite completa de testes
+    
+    ## Segurança
+    
+    A API utiliza autenticação JWT. Para endpoints protegidos, inclua o header:
+    `Authorization: Bearer <seu_token>`
+    """,
+    version="2.0.0",
+    terms_of_service="https://github.com/aluiziorenato/ml_project",
+    contact={
+        "name": "ML Project Team",
+        "url": "https://github.com/aluiziorenato/ml_project",
+        "email": "contato@mlproject.com",
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "Operações de autenticação e autorização"
+        },
+        {
+            "name": "Mercado Livre",
+            "description": "Integração com APIs do Mercado Livre"
+        },
+        {
+            "name": "Products",
+            "description": "Gerenciamento de produtos"
+        },
+        {
+            "name": "SEO",
+            "description": "Otimização e SEO"
+        },
+        {
+            "name": "Testing",
+            "description": "Testes e validações"
+        },
+        {
+            "name": "Health",
+            "description": "Health checks e monitoramento"
+        }
+    ]
+)
 app.include_router(auth.router)
 app.add_middleware(
     CORSMiddleware,
