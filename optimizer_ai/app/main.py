@@ -237,6 +237,238 @@ SEGMENT_TEMPLATES = {
     }
 }
 
+# Utility Functions
+def calculate_advanced_seo_score(text: str, keywords: List[str]) -> int:
+    """Calculate advanced SEO score with multiple factors"""
+    score = 0
+    text_lower = text.lower()
+    
+    # Keyword density (25 points)
+    keyword_count = sum(text_lower.count(kw.lower()) for kw in keywords)
+    total_words = len(text.split())
+    if total_words > 0:
+        density = keyword_count / total_words
+        if 0.01 <= density <= 0.03:  # Ideal density 1-3%
+            score += 25
+        elif density > 0:
+            score += max(0, 25 - abs(density - 0.02) * 500)
+    
+    # Title structure (20 points)
+    sentences = text.split('.')
+    if sentences and len(sentences[0]) < 60:  # Good title length
+        score += 20
+    
+    # Readability (20 points)
+    readability = textstat.flesch_reading_ease(text)
+    if readability >= 60:  # Easy to read
+        score += 20
+    elif readability >= 30:
+        score += 10
+    
+    # Text length (15 points)
+    if 150 <= len(text) <= 300:  # Optimal length
+        score += 15
+    elif 100 <= len(text) <= 500:
+        score += 10
+    
+    # Call to action presence (10 points)
+    cta_words = ["compre", "clique", "veja", "descubra", "aproveite", "garanta"]
+    if any(cta in text_lower for cta in cta_words):
+        score += 10
+    
+    # Emotional words (10 points)
+    emotional_words = ["incrível", "fantástico", "exclusivo", "especial", "único", "melhor"]
+    emotion_count = sum(1 for word in emotional_words if word in text_lower)
+    score += min(10, emotion_count * 2)
+    
+    return min(100, score)
+
+def calculate_sentiment_score(text: str) -> float:
+    """Calculate sentiment score using simple word analysis"""
+    positive_words = [
+        "excelente", "ótimo", "bom", "qualidade", "premium", "especial",
+        "incrível", "fantástico", "perfeito", "ideal", "melhor", "superior"
+    ]
+    negative_words = [
+        "ruim", "péssimo", "problema", "defeito", "falha", "barato",
+        "inferior", "pior", "difícil", "complicado"
+    ]
+    
+    text_lower = text.lower()
+    positive_count = sum(1 for word in positive_words if word in text_lower)
+    negative_count = sum(1 for word in negative_words if word in text_lower)
+    
+    total_words = len(text.split())
+    if total_words == 0:
+        return 0.5
+    
+    sentiment = (positive_count - negative_count) / total_words
+    return max(0, min(1, 0.5 + sentiment * 5))  # Normalize to 0-1
+
+def check_compliance(text: str, category: str) -> ComplianceCheckResponse:
+    """Check Mercado Livre compliance rules"""
+    violations = []
+    compliance_score = 100
+    risk_level = "low"
+    
+    # Check prohibited words
+    text_lower = text.lower()
+    for word in MERCADOLIVRE_COMPLIANCE_RULES["prohibited_words"]:
+        if word in text_lower:
+            violations.append({
+                "type": "prohibited_word",
+                "description": f"Palavra proibida encontrada: '{word}'",
+                "suggestion": f"Remover ou substituir '{word}'"
+            })
+            compliance_score -= 20
+    
+    # Check character limits
+    if len(text) > MERCADOLIVRE_COMPLIANCE_RULES["character_limits"]["description"]:
+        violations.append({
+            "type": "length_violation",
+            "description": "Texto muito longo para descrição",
+            "suggestion": f"Reduzir para máximo {MERCADOLIVRE_COMPLIANCE_RULES['character_limits']['description']} caracteres"
+        })
+        compliance_score -= 15
+    
+    # Check CAPS LOCK usage
+    caps_ratio = sum(1 for c in text if c.isupper()) / max(len(text), 1)
+    if caps_ratio > 0.3:
+        violations.append({
+            "type": "formatting_violation",
+            "description": "Uso excessivo de maiúsculas",
+            "suggestion": "Reduzir uso de CAPS LOCK"
+        })
+        compliance_score -= 10
+    
+    # Check required disclaimers
+    required_disclaimers = MERCADOLIVRE_COMPLIANCE_RULES["required_disclaimers"].get(category, [])
+    for disclaimer in required_disclaimers:
+        if disclaimer.lower() not in text_lower:
+            violations.append({
+                "type": "missing_disclaimer",
+                "description": f"Disclaimer obrigatório ausente: {disclaimer}",
+                "suggestion": f"Adicionar: {disclaimer}"
+            })
+            compliance_score -= 15
+    
+    # Determine risk level
+    if compliance_score >= 80:
+        risk_level = "low"
+    elif compliance_score >= 60:
+        risk_level = "medium"
+    else:
+        risk_level = "high"
+    
+    recommendations = []
+    if violations:
+        recommendations.append("Revisar e corrigir todas as violações identificadas")
+        recommendations.append("Consultar guidelines oficiais do Mercado Livre")
+    else:
+        recommendations.append("Texto está em conformidade com as regras")
+    
+    return ComplianceCheckResponse(
+        is_compliant=len(violations) == 0,
+        violations=violations,
+        compliance_score=max(0, compliance_score),
+        risk_level=risk_level,
+        recommendations=recommendations
+    )
+
+def optimize_for_segment(text: str, segment: str, keywords: List[str]) -> str:
+    """Optimize text for specific audience segment"""
+    if segment not in SEGMENT_TEMPLATES:
+        return text
+    
+    template = SEGMENT_TEMPLATES[segment]
+    optimized = text
+    
+    # Add segment-specific keywords
+    segment_keywords = template["keywords_focus"]
+    for keyword in segment_keywords:
+        if keyword not in optimized.lower():
+            # Try to naturally incorporate keyword
+            optimized = f"{optimized} {keyword}".strip()
+    
+    # Apply tone adjustments (simplified implementation)
+    if template["tone"] == "professional":
+        optimized = optimized.replace("muito bom", "excelente qualidade")
+        optimized = optimized.replace("legal", "adequado")
+    elif template["tone"] == "casual":
+        optimized = optimized.replace("excelente", "muito bom")
+        optimized = optimized.replace("adequado", "legal")
+    
+    return optimized
+
+async def suggest_keywords_ai(category: str, title: str, audience: str) -> List[Dict[str, Any]]:
+    """AI-powered keyword suggestions"""
+    # Simulate AI keyword generation (in production, use real ML models)
+    category_keywords = {
+        "electronics": ["smartphone", "tecnologia", "gadget", "inovação", "conectividade"],
+        "clothing": ["moda", "estilo", "tendência", "conforto", "qualidade"],
+        "home": ["casa", "decoração", "funcional", "design", "prático"],
+        "books": ["conhecimento", "leitura", "educação", "cultura", "aprendizado"],
+        "sports": ["fitness", "performance", "esporte", "saúde", "ativo"]
+    }
+    
+    base_keywords = category_keywords.get(category, ["qualidade", "produto", "excelente"])
+    
+    # Add audience-specific modifiers
+    audience_modifiers = {
+        "young_adults": ["moderno", "inovador", "cool"],
+        "professionals": ["profissional", "eficiente", "produtivo"],
+        "families": ["seguro", "confiável", "família"],
+        "seniors": ["fácil", "simples", "tradicional"]
+    }
+    
+    modifiers = audience_modifiers.get(audience, ["versátil", "prático"])
+    
+    # Combine and score keywords
+    suggested = []
+    for i, keyword in enumerate(base_keywords + modifiers):
+        suggested.append({
+            "keyword": keyword,
+            "score": random.uniform(0.7, 1.0),
+            "volume_estimate": random.randint(1000, 10000),
+            "competition": random.choice(["low", "medium", "high"])
+        })
+    
+    return suggested[:10]
+
+async def integrate_with_simulator(text: str, category: str, audience: str, budget: float) -> Dict[str, Any]:
+    """Integrate with simulator service for automatic testing"""
+    try:
+        # Simulate API call to simulator service
+        simulator_url = "http://localhost:8001/api/simulate"  # In production, use service discovery
+        
+        # Prepare simulation request
+        simulation_data = {
+            "product_name": "Optimized Product",
+            "category": category,
+            "budget": budget,
+            "duration_days": 7,
+            "target_audience": audience,
+            "keywords": text.split()[:5]  # Use first 5 words as keywords
+        }
+        
+        # In production, make actual HTTP call
+        # async with httpx.AsyncClient() as client:
+        #     response = await client.post(simulator_url, json=simulation_data)
+        #     return response.json()
+        
+        # For demo, return simulated results
+        return {
+            "campaign_id": f"SIM_{random.randint(100000, 999999)}",
+            "estimated_reach": random.randint(5000, 50000),
+            "estimated_clicks": random.randint(250, 2500),
+            "estimated_conversions": random.randint(10, 100),
+            "roi_percentage": random.uniform(15, 85)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error integrating with simulator: {e}")
+        return {"error": "Simulator integration failed", "details": str(e)}
+
 class ABTestRequest(BaseModel):
     variations: List[str]
     audience: str
