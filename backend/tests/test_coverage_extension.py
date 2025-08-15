@@ -22,22 +22,20 @@ class TestCRUDEndpoints:
         """Test successful endpoint creation."""
         endpoint_data = ApiEndpoint(
             name="Test API",
-            base_url="https://api.test.com",
-            auth_type="bearer",
-            oauth_scope="read"
+            url="https://api.test.com"
         )
         
         created = create_endpoint(session, endpoint_data)
         assert created.id is not None
         assert created.name == "Test API"
-        assert created.base_url == "https://api.test.com"
+        assert created.url == "https://api.test.com"
     
     def test_get_endpoint_success(self, session: Session):
         """Test successful endpoint retrieval."""
         # Create an endpoint first
         endpoint_data = ApiEndpoint(
             name="Get Test API",
-            base_url="https://api.gettest.com"
+            url="https://api.gettest.com"
         )
         created = create_endpoint(session, endpoint_data)
         
@@ -58,7 +56,7 @@ class TestCRUDEndpoints:
         for i in range(3):
             endpoint_data = ApiEndpoint(
                 name=f"List Test API {i}",
-                base_url=f"https://api.listtest{i}.com"
+                url=f"https://api.listtest{i}.com"
             )
             create_endpoint(session, endpoint_data)
         
@@ -70,17 +68,17 @@ class TestCRUDEndpoints:
         # Create an endpoint first
         endpoint_data = ApiEndpoint(
             name="Update Test API",
-            base_url="https://api.updatetest.com"
+            url="https://api.updatetest.com"
         )
         created = create_endpoint(session, endpoint_data)
         
         # Update it
-        update_data = {"name": "Updated API", "base_url": "https://api.updated.com"}
+        update_data = {"name": "Updated API", "url": "https://api.updated.com"}
         updated = update_endpoint(session, created.id, update_data)
         
         assert updated is not None
         assert updated.name == "Updated API"
-        assert updated.base_url == "https://api.updated.com"
+        assert updated.url == "https://api.updated.com"
     
     def test_update_endpoint_not_found(self, session: Session):
         """Test endpoint update with non-existent ID."""
@@ -93,7 +91,7 @@ class TestCRUDEndpoints:
         # Create an endpoint first
         endpoint_data = ApiEndpoint(
             name="Delete Test API",
-            base_url="https://api.deletetest.com"
+            url="https://api.deletetest.com"
         )
         created = create_endpoint(session, endpoint_data)
         
@@ -118,7 +116,7 @@ class TestApiEndpointsRouter:
         """Test endpoint creation route."""
         endpoint_data = {
             "name": "Route Test API",
-            "base_url": "https://api.routetest.com",
+            "url": "https://api.routetest.com",
             "auth_type": "oauth",
             "oauth_scope": "read write"
         }
@@ -128,14 +126,14 @@ class TestApiEndpointsRouter:
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "Route Test API"
-        assert data["base_url"] == "https://api.routetest.com"
+        assert data["url"] == "https://api.routetest.com"
     
     def test_endpoint_get_route(self, client: TestClient, auth_headers: dict):
         """Test endpoint retrieval route."""
         # Create an endpoint first
         endpoint_data = {
             "name": "Get Route Test API",
-            "base_url": "https://api.getroutetest.com"
+            "url": "https://api.getroutetest.com"
         }
         
         create_response = client.post("/api/endpoints/", json=endpoint_data, headers=auth_headers)
@@ -161,7 +159,7 @@ class TestApiEndpointsRouter:
         # Create an endpoint first
         endpoint_data = {
             "name": "Update Route Test API",
-            "base_url": "https://api.updateroutetest.com"
+            "url": "https://api.updateroutetest.com"
         }
         
         create_response = client.post("/api/endpoints/", json=endpoint_data, headers=auth_headers)
@@ -170,7 +168,7 @@ class TestApiEndpointsRouter:
         # Update it
         update_data = {
             "name": "Updated Route API",
-            "base_url": "https://api.updatedroute.com"
+            "url": "https://api.updatedroute.com"
         }
         
         response = client.put(f"/api/endpoints/{created_endpoint['id']}", json=update_data, headers=auth_headers)
@@ -178,13 +176,13 @@ class TestApiEndpointsRouter:
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "Updated Route API"
-        assert data["base_url"] == "https://api.updatedroute.com"
+        assert data["url"] == "https://api.updatedroute.com"
     
     def test_endpoint_update_route_not_found(self, client: TestClient, auth_headers: dict):
         """Test endpoint update route with non-existent ID."""
         update_data = {
             "name": "Non-existent API",
-            "base_url": "https://api.nonexistent.com"
+            "url": "https://api.nonexistent.com"
         }
         
         response = client.put("/api/endpoints/999999", json=update_data, headers=auth_headers)
@@ -197,7 +195,7 @@ class TestApiEndpointsRouter:
         # Create an endpoint first
         endpoint_data = {
             "name": "Delete Route Test API",
-            "base_url": "https://api.deleteroutetest.com"
+            "url": "https://api.deleteroutetest.com"
         }
         
         create_response = client.post("/api/endpoints/", json=endpoint_data, headers=auth_headers)
