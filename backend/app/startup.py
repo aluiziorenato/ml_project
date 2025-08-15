@@ -18,7 +18,7 @@ def create_admin_user():
             return
 
         hashed_password = get_password_hash(admin_password)
-        user = User(email=admin_email, password=hashed_password)
+        user = User(email=admin_email, hashed_password=hashed_password, is_superuser=True)
         session.add(user)
         session.commit()
         print(f"[Seed] Usuário admin criado: {admin_email}")
