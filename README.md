@@ -3,16 +3,19 @@
 
 Este projeto integra **FastAPI** (backend) e **React** (frontend) com a API do Mercado Libre, utilizando **Docker Compose** para orquestrar os serviços: backend, frontend, PostgreSQL e pgAdmin.
 
+**🔥 Versão atualizada com melhorias de arquitetura, segurança e boas práticas!**
+
 ---
 
 ## 🚀 Quick Start
 
 1. Copie o arquivo `.env.example` para `backend/.env` e preencha as variáveis obrigatórias:
    - `ML_CLIENT_ID`
-   - `ML_CLIENT_SECRET`
+   - `ML_CLIENT_SECRET`  
    - `SECRET_KEY`
    - `DATABASE_URL`
    - `ML_REDIRECT_URI`
+   - `ADMIN_PASSWORD` (senha para o usuário admin inicial)
 
 2. Execute o projeto com Docker Compose:
 
@@ -30,6 +33,32 @@ Este projeto integra **FastAPI** (backend) e **React** (frontend) com a API do M
 
 ---
 
+## 🔄 Melhorias Implementadas
+
+### ✅ Docker Compose
+- **Removida** a linha `version:` para garantir compatibilidade com versões recentes do Docker Compose
+- Otimização da configuração de containers
+
+### ✅ Configuração Backend  
+- **Configuração centralizada** com Pydantic Settings (compatível com Pydantic v2)
+- **Gerenciamento seguro** de variáveis de ambiente
+- **Validação automática** de configurações na inicialização
+- Suporte completo a aliases de variáveis de ambiente
+
+### ✅ Estrutura de Pacotes
+- **Adicionados** arquivos `__init__.py` em todos os diretórios Python necessários
+- **Padronização** de imports relativos e absolutos
+- **Modularização** do sistema de autenticação
+- Consolidação das funções de autenticação em `app/auth/`
+
+### ✅ Segurança
+- **Uso de variáveis de ambiente** para todos os valores sensíveis
+- **Configuração JWT** centralizada e segura
+- **Hash de senhas** com bcrypt
+- **Validação** de tokens de acesso automática
+
+---
+
 ## 🧠 Estrutura do Projeto
 
 ### Backend (`/backend`)
@@ -38,11 +67,21 @@ Este projeto integra **FastAPI** (backend) e **React** (frontend) com a API do M
 backend/
 ├── alembic/              # Migrações do banco de dados
 ├── app/
-│   ├── api/              # Rotas da API
-│   ├── core/             # Configurações e utilitários
+│   ├── auth/             # Sistema de autenticação modularizado
+│   │   ├── __init__.py   # Funções de auth centralizadas
+│   │   └── token.py      # Endpoints de autenticação
+│   ├── core/             # Configurações e utilitários centrais
+│   │   ├── __init__.py   # Módulo de core
+│   │   └── security.py   # Funções de segurança (deprecated, moved to auth)
 │   ├── models/           # Modelos ORM e Pydantic
+│   ├── routers/          # Rotas da API organizadas por funcionalidade
 │   ├── services/         # Integrações externas (ex: Mercado Libre)
-│   └── tests/            # Testes unitários
+│   ├── crud/             # Operações de banco de dados
+│   ├── config.py         # Exportação das configurações
+│   ├── settings.py       # Configurações centralizadas com Pydantic
+│   ├── startup.py        # Funções de inicialização
+│   ├── db.py             # Configuração do banco de dados
+│   └── main.py           # Aplicação FastAPI principal
 ├── .env                  # Variáveis de ambiente (não versionado)
 ├── .env.example          # Exemplo de variáveis
 ├── Dockerfile            # Build do backend
@@ -54,6 +93,64 @@ backend/
 
 - Aplicação React com integração à API do backend
 - Interface para autenticação e visualização de dados do Mercado Libre
+
+---
+
+## ⚙️ Configuração
+
+### Variáveis de Ambiente
+
+O projeto utiliza um sistema de configuração centralizado com Pydantic Settings. Todas as variáveis são definidas em `backend/app/settings.py` e podem ser configuradas via arquivo `.env`:
+
+#### Banco de Dados
+- `DATABASE_URL`: URL de conexão com PostgreSQL
+- `ADMIN_EMAIL`: Email do usuário administrador inicial
+- `ADMIN_PASSWORD`: Senha do usuário administrador inicial
+
+#### Mercado Libre API
+- `ML_CLIENT_ID`: ID do cliente da aplicação
+- `ML_CLIENT_SECRET`: Secret da aplicação  
+- `ML_REDIRECT_URI`: URI de callback OAuth
+
+#### JWT e Segurança
+- `SECRET_KEY`: Chave secreta para JWT (gere uma chave forte!)
+- `JWT_ALGORITHM`: Algoritmo JWT (padrão: HS256)
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: Minutos para expiração do token (padrão: 60)
+- `REFRESH_TOKEN_EXPIRE_DAYS`: Dias para expiração do refresh token (padrão: 7)
+
+#### CORS e URLs
+- `FRONTEND_ORIGIN`: URL do frontend para configuração do CORS
+- `APP_BASE_URL`: URL base da aplicação backend
+
+#### Ambiente
+- `ENV`: Ambiente de execução (development/production)
+
+### Exemplo de .env
+
+```bash
+# Banco de dados
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=sua-senha-forte-aqui
+
+# Mercado Libre
+ML_CLIENT_ID=seu-client-id
+ML_CLIENT_SECRET=seu-client-secret
+ML_REDIRECT_URI=http://localhost:8000/api/oauth/callback
+
+# Segurança
+SECRET_KEY=gere-uma-chave-secreta-forte-aqui
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# URLs
+FRONTEND_ORIGIN=http://localhost:3000
+APP_BASE_URL=http://localhost:8000
+
+# Ambiente
+ENV=development
+```
 
 ---
 

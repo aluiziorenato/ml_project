@@ -2,7 +2,7 @@ import os
 from sqlmodel import Session, select
 from app.models import User
 from app.db import engine
-from app.core.security import get_password_hash
+from app.auth import get_password_hash
 
 def create_admin_user():
     admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
