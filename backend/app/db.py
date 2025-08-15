@@ -49,12 +49,12 @@ def init_db():
 
     # cria usuário admin padrão se não existir
     with Session(engine) as session:
-        existing = session.exec(select(User).where(User.email == "admin@example.com")).first()
-        if not existing:
+        existing = session.exec(select(User).where(User.email == settings.admin_email)).first()
+        if not existing and settings.admin_password:
             from passlib.context import CryptContext
             pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-            hashed = pwd_context.hash("changeme")
-            user = User(email="admin@example.com", hashed_password=hashed, is_superuser=True)
+            hashed = pwd_context.hash(settings.admin_password)
+            user = User(email=settings.admin_email, hashed_password=hashed, is_superuser=True)
             session.add(user)
             session.commit()
-            print("Created default admin user: admin@example.com / changeme")
+            print(f"Created default admin user: {settings.admin_email}")
