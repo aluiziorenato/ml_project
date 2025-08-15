@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otimizador de Copywriting - Mercado Livre</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+        }
+        
+        .form-section, .results-section {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #e2e8f0;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #10b981, #059669);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #8b5cf6, #7c3aed);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+        }
+        
+        .results {
+            display: none;
+        }
+        
+        .result-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .optimized-text {
+            background: #f0fdf4;
+            border: 1px solid #16a34a;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+        
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .score-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .score-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f59e0b;
+        }
+        
+        .score-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+        
+        .improvements {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        
+        .improvements h4 {
+            color: #92400e;
+            margin-bottom: 0.5rem;
+        }
+        
+        .improvements ul {
+            list-style-type: none;
+        }
+        
+        .improvements li {
+            color: #92400e;
+            margin-bottom: 0.3rem;
+            padding-left: 1rem;
+            position: relative;
+        }
+        
+        .improvements li:before {
+            content: "✨";
+            position: absolute;
+            left: 0;
+        }
+        
+        .keywords-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .keyword-tag {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .variation-input {
+            margin-bottom: 1rem;
+        }
+        
+        .variation-input textarea {
+            min-height: 80px;
+        }
+        
+        .add-variation {
+            background: #e5e7eb;
+            color: #374151;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #6b7280;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .score-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ Otimizador de Copywriting</h1>
+            <p>Mercado Livre - IA para Vendas Persuasivas</p>
+        </div>
+        
+        <div class="content">
+            <div class="form-section">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('optimize')">Otimizar</button>
+                    <button class="tab" onclick="switchTab('abtest')">Teste A/B</button>
+                </div>
+                
+                <div id="optimize-tab" class="tab-content active">
+                    <h3>Otimização de Texto</h3>
+                    <form id="optimizeForm">
+                        <div class="form-group">
+                            <label for="originalText">Texto Original:</label>
+                            <textarea id="originalText" name="originalText" placeholder="Digite o texto do seu anúncio aqui..." required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="targetAudience">Público-Alvo:</label>
+                            <select id="targetAudience" name="targetAudience" required>
+                                <option value="">Selecione o público</option>
+                                <option value="young_adults">Jovens Adultos (18-30)</option>
+                                <option value="adults">Adultos (31-50)</option>
+                                <option value="seniors">Mais de 50 anos</option>
+                                <option value="families">Famílias</option>
+                                <option value="professionals">Profissionais</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="productCategory">Categoria do Produto:</label>
+                            <select id="productCategory" name="productCategory" required>
+                                <option value="">Selecione a categoria</option>
+                                <option value="electronics">Eletrônicos</option>
+                                <option value="clothing">Roupas e Acessórios</option>
+                                <option value="home">Casa e Jardim</option>
+                                <option value="books">Livros</option>
+                                <option value="sports">Esportes</option>
+                                <option value="automotive">Automotivo</option>
+                                <option value="beauty">Beleza e Cuidado</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="optimizationGoal">Objetivo da Otimização:</label>
+                            <select id="optimizationGoal" name="optimizationGoal" required>
+                                <option value="">Selecione o objetivo</option>
+                                <option value="clicks">Mais Cliques</option>
+                                <option value="conversions">Mais Conversões</option>
+                                <option value="engagement">Mais Engajamento</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="keywords">Palavras-chave (uma por linha):</label>
+                            <textarea id="keywords" name="keywords" placeholder="smartphone&#10;android&#10;barato"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn">
+                            🚀 Otimizar Texto
+                        </button>
+                    </form>
+                </div>
+                
+                <div id="abtest-tab" class="tab-content">
+                    <h3>Teste A/B de Variações</h3>
+                    <form id="abtestForm">
+                        <div class="form-group">
+                            <label for="audience">Público-Alvo:</label>
+                            <select id="audience" name="audience" required>
+                                <option value="young_adults">Jovens Adultos</option>
+                                <option value="adults">Adultos</option>
+                                <option value="families">Famílias</option>
+                                <option value="professionals">Profissionais</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category">Categoria:</label>
+                            <select id="category" name="category" required>
+                                <option value="electronics">Eletrônicos</option>
+                                <option value="clothing">Roupas</option>
+                                <option value="home">Casa</option>
+                                <option value="sports">Esportes</option>
+                            </select>
+                        </div>
+                        
+                        <div id="variations">
+                            <div class="variation-input">
+                                <label>Variação A:</label>
+                                <textarea name="variation" placeholder="Digite a primeira variação do texto..." required></textarea>
+                            </div>
+                            <div class="variation-input">
+                                <label>Variação B:</label>
+                                <textarea name="variation" placeholder="Digite a segunda variação do texto..." required></textarea>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="add-variation" onclick="addVariation()">
+                            + Adicionar Variação
+                        </button>
+                        
+                        <button type="submit" class="btn btn-secondary">
+                            🧪 Criar Teste A/B
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="results-section">
+                <h3>Resultados</h3>
+                <div id="loadingDiv" class="loading" style="display: none;">
+                    <p>🔄 Processando otimização...</p>
+                </div>
+                
+                <div id="optimizeResults" class="results">
+                    <div class="result-card">
+                        <h4>📝 Texto Otimizado</h4>
+                        <div class="optimized-text" id="optimizedText">
+                            <!-- Optimized text will appear here -->
+                        </div>
+                    </div>
+                    
+                    <div class="score-grid">
+                        <div class="score-card">
+                            <div class="score-value" id="seoScore">-</div>
+                            <div class="score-label">SEO Score</div>
+                        </div>
+                        <div class="score-card">
+                            <div class="score-value" id="readabilityScore">-</div>
+                            <div class="score-label">Legibilidade</div>
+                        </div>
+                        <div class="score-card">
+                            <div class="score-value" id="performanceLift">-</div>
+                            <div class="score-label">Melhoria (%)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <h4>🎯 Palavras-chave Incluídas</h4>
+                        <div class="keywords-tags" id="keywordsTags">
+                            <!-- Keywords will appear here -->
+                        </div>
+                    </div>
+                    
+                    <div class="improvements" id="improvementsDiv">
+                        <h4>✨ Melhorias Aplicadas</h4>
+                        <ul id="improvementsList"></ul>
+                    </div>
+                </div>
+                
+                <div id="abtestResults" class="results">
+                    <div class="result-card">
+                        <h4>🏆 Teste A/B Configurado</h4>
+                        <p><strong>ID do Teste:</strong> <span id="testId">-</span></p>
+                        <p><strong>Variação Recomendada:</strong> <span id="recommendedVariation">-</span></p>
+                        <p><strong>Confiança:</strong> <span id="confidenceScore">-</span></p>
+                        
+                        <div class="score-grid">
+                            <div class="score-card">
+                                <div class="score-value" id="clickImprovement">-</div>
+                                <div class="score-label">↗️ Cliques</div>
+                            </div>
+                            <div class="score-card">
+                                <div class="score-value" id="conversionImprovement">-</div>
+                                <div class="score-label">🎯 Conversões</div>
+                            </div>
+                            <div class="score-card">
+                                <div class="score-value" id="engagementImprovement">-</div>
+                                <div class="score-label">💬 Engajamento</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="noResults" style="text-align: center; color: #6b7280; margin-top: 2rem;">
+                    <p>✨ Otimize seu texto ou configure um teste A/B para ver os resultados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let variationCount = 2;
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Hide all results
+            document.querySelectorAll('.results').forEach(result => {
+                result.style.display = 'none';
+            });
+            
+            document.getElementById('noResults').style.display = 'block';
+        }
+
+        function addVariation() {
+            variationCount++;
+            const variationsDiv = document.getElementById('variations');
+            const newVariation = document.createElement('div');
+            newVariation.className = 'variation-input';
+            newVariation.innerHTML = `
+                <label>Variação ${String.fromCharCode(64 + variationCount)}:</label>
+                <textarea name="variation" placeholder="Digite mais uma variação do texto..." required></textarea>
+            `;
+            variationsDiv.appendChild(newVariation);
+        }
+
+        // Handle optimize form submission
+        document.getElementById('optimizeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const keywords = formData.get('keywords').split('\n').filter(k => k.trim().length > 0);
+            
+            const requestData = {
+                original_text: formData.get('originalText'),
+                target_audience: formData.get('targetAudience'),
+                product_category: formData.get('productCategory'),
+                optimization_goal: formData.get('optimizationGoal'),
+                keywords: keywords
+            };
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/optimize-copy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro na otimização');
+                }
+                
+                const results = await response.json();
+                displayOptimizeResults(results);
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao processar otimização. Tente novamente.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Handle A/B test form submission
+        document.getElementById('abtestForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const variations = Array.from(formData.getAll('variation')).filter(v => v.trim().length > 0);
+            
+            if (variations.length < 2) {
+                alert('Adicione pelo menos 2 variações para o teste A/B');
+                return;
+            }
+            
+            const requestData = {
+                variations: variations,
+                audience: formData.get('audience'),
+                category: formData.get('category')
+            };
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/ab-test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro no teste A/B');
+                }
+                
+                const results = await response.json();
+                displayABTestResults(results);
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao criar teste A/B. Tente novamente.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        function showLoading() {
+            document.getElementById('loadingDiv').style.display = 'block';
+            document.querySelectorAll('.results').forEach(result => {
+                result.style.display = 'none';
+            });
+            document.getElementById('noResults').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingDiv').style.display = 'none';
+        }
+
+        function displayOptimizeResults(results) {
+            document.getElementById('optimizedText').textContent = results.optimized_text;
+            document.getElementById('seoScore').textContent = results.seo_score;
+            document.getElementById('readabilityScore').textContent = results.readability_score;
+            document.getElementById('performanceLift').textContent = `+${results.estimated_performance_lift}%`;
+            
+            // Display keywords
+            const keywordsContainer = document.getElementById('keywordsTags');
+            keywordsContainer.innerHTML = '';
+            results.keywords_included.forEach(keyword => {
+                const tag = document.createElement('span');
+                tag.className = 'keyword-tag';
+                tag.textContent = keyword;
+                keywordsContainer.appendChild(tag);
+            });
+            
+            // Display improvements
+            const improvementsList = document.getElementById('improvementsList');
+            improvementsList.innerHTML = '';
+            results.improvements.forEach(improvement => {
+                const li = document.createElement('li');
+                li.textContent = improvement;
+                improvementsList.appendChild(li);
+            });
+            
+            document.getElementById('optimizeResults').style.display = 'block';
+        }
+
+        function displayABTestResults(results) {
+            document.getElementById('testId').textContent = results.test_id;
+            document.getElementById('recommendedVariation').textContent = `Variação ${String.fromCharCode(65 + results.recommended_variation)}`;
+            document.getElementById('confidenceScore').textContent = `${(results.confidence_score * 100).toFixed(1)}%`;
+            
+            document.getElementById('clickImprovement').textContent = `+${results.expected_results.click_rate_improvement.toFixed(1)}%`;
+            document.getElementById('conversionImprovement').textContent = `+${results.expected_results.conversion_rate_improvement.toFixed(1)}%`;
+            document.getElementById('engagementImprovement').textContent = `+${results.expected_results.engagement_improvement.toFixed(1)}%`;
+            
+            document.getElementById('abtestResults').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
