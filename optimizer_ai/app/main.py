@@ -4,15 +4,23 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import random
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 import re
+from datetime import datetime, timedelta
+import uuid
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Otimizador de Copywriting - Mercado Livre", version="1.0.0")
+app = FastAPI(
+    title="Otimizador de Copywriting - Mercado Livre", 
+    version="1.0.0",
+    description="API para otimização de copywriting e gerenciamento de testes A/B",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
 # CORS configuration
 app.add_middleware(
@@ -23,8 +31,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static files if directory exists
+import os
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# In-memory storage for demo purposes (in production, use a database)
+ab_tests_storage = {}
+copy_optimizations = {}
+templates_storage = {}
 
 class CopywritingRequest(BaseModel):
     original_text: str
@@ -34,29 +49,97 @@ class CopywritingRequest(BaseModel):
     keywords: List[str] = []
 
 class CopywritingResponse(BaseModel):
+    optimization_id: str
     optimized_text: str
     improvements: List[str]
     seo_score: int
     readability_score: int
     estimated_performance_lift: float
     keywords_included: List[str]
+    created_at: str
 
 class ABTestRequest(BaseModel):
+    name: str
     variations: List[str]
     audience: str
     category: str
+    traffic_allocation: float = 1.0  # Percentage of traffic to include
+    duration_days: int = 7
 
 class ABTestResponse(BaseModel):
     test_id: str
-    recommended_variation: int
-    confidence_score: float
-    expected_results: Dict[str, float]
+    name: str
+    status: str  # "draft", "running", "completed", "stopped"
+    variations: List[Dict[str, Any]]
+    traffic_allocation: float
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    duration_days: int
+    results: Dict[str, Any] = {}
+    winner: Optional[int] = None
+    confidence_level: Optional[float] = None
+    created_at: str
+
+class ABTestUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    status: Optional[str] = None
+    traffic_allocation: Optional[float] = None
+    duration_days: Optional[int] = None
+
+class ABTestResultsResponse(BaseModel):
+    test_id: str
+    status: str
+    results: Dict[str, Any]
+    winner: Optional[int]
+    confidence_level: Optional[float]
+    statistical_significance: bool
+    recommendations: List[str]
+
+class TemplateRequest(BaseModel):
+    name: str
+    description: str
+    category: str
+    template_text: str
+    variables: List[str] = []
+    tags: List[str] = []
+
+class TemplateResponse(BaseModel):
+    template_id: str
+    name: str
+    description: str
+    category: str
+    template_text: str
+    variables: List[str]
+    tags: List[str]
+    usage_count: int
+    created_at: str
+    updated_at: str
+
+class TemplateGenerateRequest(BaseModel):
+    template_id: str
+    variables: Dict[str, str]
+
+class BatchOptimizationRequest(BaseModel):
+    texts: List[str]
+    target_audience: str
+    product_category: str
+    optimization_goal: str
+    keywords: List[str] = []
+
+class ABTestListResponse(BaseModel):
+    tests: List[ABTestResponse]
+    total: int
+    page: int
+    per_page: int
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """Serve the main frontend page"""
-    with open("static/index.html", "r", encoding="utf-8") as file:
-        return HTMLResponse(content=file.read())
+    try:
+        with open("static/index.html", "r", encoding="utf-8") as file:
+            return HTMLResponse(content=file.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Optimizer AI Service</h1><p>API available at /docs</p>")
 
 @app.get("/health")
 async def health_check():
@@ -70,6 +153,7 @@ async def optimize_copywriting(request: CopywritingRequest) -> CopywritingRespon
     """
     logger.info(f"Optimizing copy for {request.product_category} targeting {request.target_audience}")
     
+    optimization_id = f"OPT_{str(uuid.uuid4())[:8].upper()}"
     original_text = request.original_text
     
     # Apply various optimization techniques
@@ -98,14 +182,26 @@ async def optimize_copywriting(request: CopywritingRequest) -> CopywritingRespon
     # Find included keywords
     keywords_included = [kw for kw in request.keywords if kw.lower() in optimized_text.lower()]
     
-    return CopywritingResponse(
+    # Create response
+    response = CopywritingResponse(
+        optimization_id=optimization_id,
         optimized_text=optimized_text,
         improvements=improvements,
         seo_score=seo_score,
         readability_score=readability_score,
         estimated_performance_lift=performance_lift,
-        keywords_included=keywords_included
+        keywords_included=keywords_included,
+        created_at=datetime.now().isoformat()
     )
+    
+    # Store the optimization
+    copy_optimizations[optimization_id] = {
+        "request": request,
+        "response": response,
+        "created_at": datetime.now().isoformat()
+    }
+    
+    return response
 
 @app.post("/api/ab-test", response_model=ABTestResponse)
 async def create_ab_test(request: ABTestRequest) -> ABTestResponse:
@@ -115,31 +211,451 @@ async def create_ab_test(request: ABTestRequest) -> ABTestResponse:
     if len(request.variations) < 2:
         raise HTTPException(status_code=400, detail="At least 2 variations required for A/B test")
     
-    test_id = f"ABT_{random.randint(100000, 999999)}"
+    if not (0 < request.traffic_allocation <= 1.0):
+        raise HTTPException(status_code=400, detail="Traffic allocation must be between 0 and 1")
     
-    # Analyze each variation
-    scores = []
-    for variation in request.variations:
-        score = analyze_copy_quality(variation, request.audience, request.category)
-        scores.append(score)
+    test_id = f"ABT_{str(uuid.uuid4())[:8].upper()}"
     
-    # Find best performing variation
-    recommended_variation = scores.index(max(scores))
-    confidence_score = max(scores) / sum(scores) if sum(scores) > 0 else 0
+    # Create variations with metadata
+    variations = []
+    for i, variation_text in enumerate(request.variations):
+        score = analyze_copy_quality(variation_text, request.audience, request.category)
+        variations.append({
+            "id": i,
+            "text": variation_text,
+            "quality_score": score,
+            "traffic_weight": 1.0 / len(request.variations),  # Equal distribution initially
+            "metrics": {
+                "impressions": 0,
+                "clicks": 0,
+                "conversions": 0,
+                "click_rate": 0.0,
+                "conversion_rate": 0.0
+            }
+        })
     
-    # Generate expected results
-    expected_results = {
-        "click_rate_improvement": random.uniform(10, 40),
-        "conversion_rate_improvement": random.uniform(5, 25),
-        "engagement_improvement": random.uniform(15, 50)
+    # Create A/B test
+    ab_test = ABTestResponse(
+        test_id=test_id,
+        name=request.name,
+        status="draft",
+        variations=variations,
+        traffic_allocation=request.traffic_allocation,
+        start_date=None,
+        end_date=None,
+        duration_days=request.duration_days,
+        results={},
+        winner=None,
+        confidence_level=None,
+        created_at=datetime.now().isoformat()
+    )
+    
+    # Store the test
+    ab_tests_storage[test_id] = {
+        "request": request,
+        "response": ab_test,
+        "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat()
     }
     
-    return ABTestResponse(
-        test_id=test_id,
-        recommended_variation=recommended_variation,
-        confidence_score=round(confidence_score, 3),
-        expected_results=expected_results
+    logger.info(f"Created A/B test {test_id}: {request.name}")
+    
+    return ab_test
+
+@app.get("/api/ab-tests", response_model=ABTestListResponse)
+async def list_ab_tests(page: int = 1, per_page: int = 10, status: Optional[str] = None):
+    """List all A/B tests with pagination and optional status filter"""
+    tests = [test_data["response"] for test_data in ab_tests_storage.values()]
+    
+    # Filter by status
+    if status:
+        tests = [t for t in tests if t.status == status]
+    
+    total = len(tests)
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_tests = tests[start_idx:end_idx]
+    
+    return ABTestListResponse(
+        tests=paginated_tests,
+        total=total,
+        page=page,
+        per_page=per_page
     )
+
+@app.get("/api/ab-tests/{test_id}", response_model=ABTestResponse)
+async def get_ab_test(test_id: str):
+    """Get A/B test details"""
+    if test_id not in ab_tests_storage:
+        raise HTTPException(status_code=404, detail="A/B test not found")
+    
+    return ab_tests_storage[test_id]["response"]
+
+@app.put("/api/ab-tests/{test_id}", response_model=ABTestResponse)
+async def update_ab_test(test_id: str, updates: ABTestUpdateRequest):
+    """Update A/B test configuration"""
+    if test_id not in ab_tests_storage:
+        raise HTTPException(status_code=404, detail="A/B test not found")
+    
+    test_data = ab_tests_storage[test_id]
+    ab_test = test_data["response"]
+    
+    # Update allowed fields
+    updated_fields = updates.dict(exclude_unset=True)
+    
+    for field, value in updated_fields.items():
+        if hasattr(ab_test, field):
+            setattr(ab_test, field, value)
+    
+    test_data["updated_at"] = datetime.now().isoformat()
+    ab_tests_storage[test_id] = test_data
+    
+    return ab_test
+
+@app.post("/api/ab-tests/{test_id}/start")
+async def start_ab_test(test_id: str):
+    """Start an A/B test"""
+    if test_id not in ab_tests_storage:
+        raise HTTPException(status_code=404, detail="A/B test not found")
+    
+    test_data = ab_tests_storage[test_id]
+    ab_test = test_data["response"]
+    
+    if ab_test.status != "draft":
+        raise HTTPException(status_code=400, detail="Only draft tests can be started")
+    
+    ab_test.status = "running"
+    ab_test.start_date = datetime.now().isoformat()
+    ab_test.end_date = (datetime.now() + timedelta(days=ab_test.duration_days)).isoformat()
+    
+    test_data["updated_at"] = datetime.now().isoformat()
+    ab_tests_storage[test_id] = test_data
+    
+    return {"message": f"A/B test {test_id} started successfully"}
+
+@app.post("/api/ab-tests/{test_id}/stop")
+async def stop_ab_test(test_id: str):
+    """Stop a running A/B test"""
+    if test_id not in ab_tests_storage:
+        raise HTTPException(status_code=404, detail="A/B test not found")
+    
+    test_data = ab_tests_storage[test_id]
+    ab_test = test_data["response"]
+    
+    if ab_test.status != "running":
+        raise HTTPException(status_code=400, detail="Only running tests can be stopped")
+    
+    ab_test.status = "stopped"
+    ab_test.end_date = datetime.now().isoformat()
+    
+    test_data["updated_at"] = datetime.now().isoformat()
+    ab_tests_storage[test_id] = test_data
+    
+    return {"message": f"A/B test {test_id} stopped successfully"}
+
+@app.get("/api/ab-tests/{test_id}/results", response_model=ABTestResultsResponse)
+async def get_ab_test_results(test_id: str):
+    """Get A/B test results and analysis"""
+    if test_id not in ab_tests_storage:
+        raise HTTPException(status_code=404, detail="A/B test not found")
+    
+    test_data = ab_tests_storage[test_id]
+    ab_test = test_data["response"]
+    
+    # Simulate test results for demo (in real implementation, this would come from analytics)
+    if ab_test.status in ["running", "completed", "stopped"]:
+        # Generate simulated metrics for each variation
+        for i, variation in enumerate(ab_test.variations):
+            base_impressions = random.randint(1000, 5000)
+            click_rate = random.uniform(0.02, 0.08)
+            conversion_rate = random.uniform(0.01, 0.05)
+            
+            variation["metrics"]["impressions"] = base_impressions
+            variation["metrics"]["clicks"] = int(base_impressions * click_rate)
+            variation["metrics"]["conversions"] = int(variation["metrics"]["clicks"] * conversion_rate)
+            variation["metrics"]["click_rate"] = round(click_rate, 4)
+            variation["metrics"]["conversion_rate"] = round(conversion_rate, 4)
+        
+        # Determine winner (highest conversion rate)
+        best_variation = max(ab_test.variations, key=lambda v: v["metrics"]["conversion_rate"])
+        winner_index = best_variation["id"]
+        
+        # Calculate confidence level (simplified)
+        confidence_level = random.uniform(0.85, 0.99)
+        statistical_significance = confidence_level > 0.95
+        
+        # Generate recommendations
+        recommendations = []
+        if statistical_significance:
+            recommendations.append(f"Variation {winner_index} is the clear winner with {confidence_level:.1%} confidence")
+            recommendations.append("Implement the winning variation for best results")
+        else:
+            recommendations.append("Results are not statistically significant yet")
+            recommendations.append("Consider running the test longer for more reliable results")
+        
+        if best_variation["metrics"]["click_rate"] > 0.05:
+            recommendations.append("High click rate indicates strong copy appeal")
+        
+        ab_test.winner = winner_index
+        ab_test.confidence_level = confidence_level
+        
+        if ab_test.status == "running" and datetime.now() > datetime.fromisoformat(ab_test.end_date.replace('Z', '+00:00')):
+            ab_test.status = "completed"
+        
+        results = {
+            "variations": ab_test.variations,
+            "winner": winner_index,
+            "confidence_level": confidence_level,
+            "total_impressions": sum(v["metrics"]["impressions"] for v in ab_test.variations),
+            "total_clicks": sum(v["metrics"]["clicks"] for v in ab_test.variations),
+            "total_conversions": sum(v["metrics"]["conversions"] for v in ab_test.variations)
+        }
+        
+        return ABTestResultsResponse(
+            test_id=test_id,
+            status=ab_test.status,
+            results=results,
+            winner=winner_index,
+            confidence_level=confidence_level,
+            statistical_significance=statistical_significance,
+            recommendations=recommendations
+        )
+    
+    else:
+        return ABTestResultsResponse(
+            test_id=test_id,
+            status=ab_test.status,
+            results={},
+            winner=None,
+            confidence_level=None,
+            statistical_significance=False,
+            recommendations=["Test has not been started yet"]
+        )
+
+@app.delete("/api/ab-tests/{test_id}")
+async def delete_ab_test(test_id: str):
+    """Delete an A/B test"""
+    if test_id not in ab_tests_storage:
+        raise HTTPException(status_code=404, detail="A/B test not found")
+    
+    test_data = ab_tests_storage[test_id]
+    ab_test = test_data["response"]
+    
+    if ab_test.status == "running":
+        raise HTTPException(status_code=400, detail="Cannot delete running test. Stop it first.")
+    
+    del ab_tests_storage[test_id]
+    return {"message": f"A/B test {test_id} deleted successfully"}
+
+# Template Management Endpoints
+
+@app.post("/api/templates", response_model=TemplateResponse)
+async def create_template(request: TemplateRequest):
+    """Create a new copywriting template"""
+    template_id = f"TPL_{str(uuid.uuid4())[:8].upper()}"
+    
+    template = TemplateResponse(
+        template_id=template_id,
+        name=request.name,
+        description=request.description,
+        category=request.category,
+        template_text=request.template_text,
+        variables=request.variables,
+        tags=request.tags,
+        usage_count=0,
+        created_at=datetime.now().isoformat(),
+        updated_at=datetime.now().isoformat()
+    )
+    
+    templates_storage[template_id] = template
+    logger.info(f"Created template {template_id}: {request.name}")
+    
+    return template
+
+@app.get("/api/templates", response_model=List[TemplateResponse])
+async def list_templates(category: Optional[str] = None, tag: Optional[str] = None):
+    """List all templates with optional filters"""
+    templates = list(templates_storage.values())
+    
+    if category:
+        templates = [t for t in templates if t.category == category]
+    
+    if tag:
+        templates = [t for t in templates if tag in t.tags]
+    
+    return templates
+
+@app.get("/api/templates/{template_id}", response_model=TemplateResponse)
+async def get_template(template_id: str):
+    """Get a specific template"""
+    if template_id not in templates_storage:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    return templates_storage[template_id]
+
+@app.post("/api/templates/{template_id}/generate", response_model=CopywritingResponse)
+async def generate_from_template(template_id: str, request: TemplateGenerateRequest):
+    """Generate copy from a template"""
+    if template_id not in templates_storage:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    if request.template_id != template_id:
+        raise HTTPException(status_code=400, detail="Template ID mismatch")
+    
+    template = templates_storage[template_id]
+    
+    # Replace variables in template
+    generated_text = template.template_text
+    for var_name, var_value in request.variables.items():
+        placeholder = f"{{{var_name}}}"
+        generated_text = generated_text.replace(placeholder, var_value)
+    
+    # Check for unreplaced variables
+    import re
+    unreplaced = re.findall(r'\{(\w+)\}', generated_text)
+    if unreplaced:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Missing values for variables: {', '.join(unreplaced)}"
+        )
+    
+    # Update usage count
+    template.usage_count += 1
+    template.updated_at = datetime.now().isoformat()
+    templates_storage[template_id] = template
+    
+    # Generate optimization response
+    optimization_id = f"OPT_{str(uuid.uuid4())[:8].upper()}"
+    
+    response = CopywritingResponse(
+        optimization_id=optimization_id,
+        optimized_text=generated_text,
+        improvements=["Generated from template", f"Used template: {template.name}"],
+        seo_score=calculate_seo_score(generated_text, []),
+        readability_score=calculate_readability_score(generated_text),
+        estimated_performance_lift=random.uniform(5, 15),
+        keywords_included=[],
+        created_at=datetime.now().isoformat()
+    )
+    
+    return response
+
+@app.delete("/api/templates/{template_id}")
+async def delete_template(template_id: str):
+    """Delete a template"""
+    if template_id not in templates_storage:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    del templates_storage[template_id]
+    return {"message": f"Template {template_id} deleted successfully"}
+
+# Batch Processing Endpoints
+
+@app.post("/api/optimize-batch", response_model=List[CopywritingResponse])
+async def optimize_batch(request: BatchOptimizationRequest):
+    """Optimize multiple texts in batch"""
+    if len(request.texts) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 texts allowed per batch")
+    
+    results = []
+    for text in request.texts:
+        # Create individual optimization request
+        individual_request = CopywritingRequest(
+            original_text=text,
+            target_audience=request.target_audience,
+            product_category=request.product_category,
+            optimization_goal=request.optimization_goal,
+            keywords=request.keywords
+        )
+        
+        # Optimize the text
+        optimization = await optimize_copywriting(individual_request)
+        results.append(optimization)
+    
+    return results
+
+# Analytics and Stats Endpoints
+
+@app.get("/api/optimizations/{optimization_id}")
+async def get_optimization(optimization_id: str):
+    """Get a specific optimization result"""
+    if optimization_id not in copy_optimizations:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    return copy_optimizations[optimization_id]["response"]
+
+@app.get("/api/stats/optimizations")
+async def get_optimization_stats():
+    """Get optimization statistics"""
+    if not copy_optimizations:
+        return {
+            "total_optimizations": 0,
+            "avg_seo_score": 0,
+            "avg_readability_score": 0,
+            "avg_performance_lift": 0,
+            "popular_goals": {},
+            "popular_categories": {}
+        }
+    
+    optimizations = [opt["response"] for opt in copy_optimizations.values()]
+    
+    avg_seo = sum(opt.seo_score for opt in optimizations) / len(optimizations)
+    avg_readability = sum(opt.readability_score for opt in optimizations) / len(optimizations)
+    avg_lift = sum(opt.estimated_performance_lift for opt in optimizations) / len(optimizations)
+    
+    # Count popular goals and categories
+    goals = {}
+    categories = {}
+    
+    for opt_data in copy_optimizations.values():
+        goal = opt_data["request"].optimization_goal
+        category = opt_data["request"].product_category
+        
+        goals[goal] = goals.get(goal, 0) + 1
+        categories[category] = categories.get(category, 0) + 1
+    
+    return {
+        "total_optimizations": len(optimizations),
+        "avg_seo_score": round(avg_seo, 1),
+        "avg_readability_score": round(avg_readability, 1),
+        "avg_performance_lift": round(avg_lift, 1),
+        "popular_goals": goals,
+        "popular_categories": categories
+    }
+
+@app.get("/api/stats/ab-tests")
+async def get_ab_test_stats():
+    """Get A/B test statistics"""
+    if not ab_tests_storage:
+        return {
+            "total_tests": 0,
+            "running_tests": 0,
+            "completed_tests": 0,
+            "avg_confidence": 0,
+            "test_statuses": {}
+        }
+    
+    tests = [test_data["response"] for test_data in ab_tests_storage.values()]
+    
+    running_tests = sum(1 for test in tests if test.status == "running")
+    completed_tests = sum(1 for test in tests if test.status == "completed")
+    
+    # Calculate average confidence for completed tests
+    completed_with_confidence = [test for test in tests if test.confidence_level is not None]
+    avg_confidence = sum(test.confidence_level for test in completed_with_confidence) / max(len(completed_with_confidence), 1)
+    
+    # Count test statuses
+    statuses = {}
+    for test in tests:
+        statuses[test.status] = statuses.get(test.status, 0) + 1
+    
+    return {
+        "total_tests": len(tests),
+        "running_tests": running_tests,
+        "completed_tests": completed_tests,
+        "avg_confidence": round(avg_confidence, 3),
+        "test_statuses": statuses
+    }
 
 def apply_optimizations(text: str, audience: str, category: str, goal: str, keywords: List[str]) -> str:
     """Apply various copywriting optimizations"""
