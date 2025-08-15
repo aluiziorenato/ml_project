@@ -6,7 +6,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
 from sqlmodel import Session
 
-from app.models import User, OAuthSession, ApiEndpoint, OAuthToken
+from app.models import User, OAuthSession, OAuthToken
 from app.services.mercadolibre import (
     generate_code_verifier, 
     generate_code_challenge, 
@@ -146,7 +146,9 @@ class TestDatabaseIntegration:
     
     def test_api_endpoint_crud(self, session: Session):
         """Test API endpoint CRUD operations."""
-        endpoint = ApiEndpoint(
+        # Import from the models package which has the correct structure
+        from app.models import ApiEndpoint as MainApiEndpoint
+        endpoint = MainApiEndpoint(
             name="Test Endpoint",
             base_url="https://api.example.com",
             auth_type="oauth",
@@ -322,8 +324,11 @@ class TestCommunicationIntegration:
         session.refresh(user)
         
         # Mock an async API call that would use this user's data
-        with patch("app.services.mercadolibre.get_user_info") as mock_get_user:
-            mock_get_user.return_value = {"id": 123, "email": user.email}
+        with patch("httpx.AsyncClient.get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.raise_for_status.return_value = None
+            mock_response.json.return_value = {"id": 123, "email": user.email}
+            mock_get.return_value = mock_response
             
             # Simulate getting user info
             user_info = await get_user_info("fake_token")
