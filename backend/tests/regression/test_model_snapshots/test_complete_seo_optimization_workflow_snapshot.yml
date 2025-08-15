@@ -1,0 +1,39 @@
+blog_article:
+  cleaned: How to improve your websites search engine optimization for better visibility
+  keywords:
+  - website
+  - optimization
+  - visibility
+  meta_description: How to improve your websites search engine optimization for better
+    visibility
+  original: How to improve your website's search engine optimization for better visibility
+  slug: how-to-improve-your-websites-search-engine-optimiz
+  title: How to improve your websites search engine optimization
+e_commerce_product:
+  cleaned: Premium wireless headphones with noise cancellation and 30-hour battery
+    life
+  keywords:
+  - wireless
+  - headphones
+  - premium
+  - battery
+  meta_description: Premium wireless headphones with noise cancellation and 30-hour
+    battery life
+  original: Premium wireless headphones with noise cancellation and 30-hour battery
+    life
+  slug: premium-wireless-headphones-with-noise-cancellatio
+  title: Premium wireless headphones with noise cancellation and
+service_description:
+  cleaned: Professional web development services using modern technologies and best
+    practices
+  keywords:
+  - web
+  - development
+  - professional
+  - modern
+  meta_description: Professional web development services using modern technologies
+    and best practices
+  original: Professional web development services using modern technologies and best
+    practices
+  slug: professional-web-development-services-using-modern
+  title: Professional web development services using modern

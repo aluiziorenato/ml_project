@@ -1,0 +1,32 @@
+case_1:
+  final_length: 17
+  max_length: 160
+  optimized: Short description
+  original: Short description
+case_2:
+  final_length: 62
+  max_length: 160
+  optimized: Medium length description that should fit within normal limits
+  original: Medium length description that should fit within normal limits
+case_3:
+  final_length: 133
+  max_length: 160
+  optimized: Very long description that will definitely exceed the maximum length
+    and needs to be truncated properly while maintaining readability
+  original: Very long description that will definitely exceed the maximum length and
+    needs to be truncated properly while maintaining readability
+case_4:
+  final_length: 27
+  max_length: 50
+  optimized: Description for short limit
+  original: Description for short limit
+case_5:
+  final_length: 29
+  max_length: 30
+  optimized: Perfect length description...
+  original: Perfect length description text
+case_6:
+  final_length: 39
+  max_length: 100
+  optimized: Text with special characters !@#$%^&*()
+  original: Text with special characters !@#$%^&*()

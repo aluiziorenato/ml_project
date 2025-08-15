@@ -1,0 +1,16 @@
+verifier_properties:
+- has_valid_chars: true
+  is_string: true
+  length: 86
+- has_valid_chars: true
+  is_string: true
+  length: 86
+- has_valid_chars: true
+  is_string: true
+  length: 86
+- has_valid_chars: true
+  is_string: true
+  length: 86
+- has_valid_chars: true
+  is_string: true
+  length: 86

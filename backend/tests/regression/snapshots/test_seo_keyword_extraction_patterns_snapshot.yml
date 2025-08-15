@@ -1,0 +1,30 @@
+text_1:
+  keyword_count: 1
+  keywords:
+  - technology
+  original: Technology product with advanced features and modern design
+text_2:
+  keyword_count: 0
+  keywords: []
+  original: The quick brown fox jumps over the lazy dog repeatedly
+text_3:
+  keyword_count: 1
+  keywords:
+  - learning
+  original: Machine learning artificial intelligence deep learning neural networks
+text_4:
+  keyword_count: 1
+  keywords:
+  - quality
+  original: 'Product review: excellent quality, great price, fast shipping, recommended'
+text_5:
+  keyword_count: 0
+  keywords: []
+  original: Short text
+text_6:
+  keyword_count: 3
+  keywords:
+  - repetitive
+  - word
+  - test
+  original: Repetitive repetitive repetitive word word word test test test

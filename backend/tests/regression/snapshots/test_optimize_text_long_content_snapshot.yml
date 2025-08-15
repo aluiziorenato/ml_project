@@ -1,0 +1,21 @@
+cleaned: This is a comprehensive product description that contains multiple sentences
+  and detailed information about the product features, specifications, and benefits.
+  The text is intentionally long to test how the optimization handles content that
+  exceeds the maximum meta description length and needs to be truncated appropriately
+  while maintaining readability and keyword density.
+keywords:
+- product
+- description
+- that
+- features
+- comprehensive
+meta_description: This is a comprehensive product description that contains multiple
+  sentences and detailed information about the product features, specifications, and...
+original: "\n        This is a comprehensive product description that contains multiple\
+  \ sentences \n        and detailed information about the product features, specifications,\
+  \ and benefits. \n        The text is intentionally long to test how the optimization\
+  \ handles content \n        that exceeds the maximum meta description length and\
+  \ needs to be truncated \n        appropriately while maintaining readability and\
+  \ keyword density.\n        "
+slug: this-is-a-comprehensive-product-description-that-c
+title: This is a comprehensive product description that contains
