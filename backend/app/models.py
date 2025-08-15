@@ -11,14 +11,6 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 # demais modelos...
-class ApiEndpoint(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str
-    url: str
-    default_headers: Optional[str] = None
-    auth_type: Optional[str] = "none"
-    oauth_scope: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class OAuthSession(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
