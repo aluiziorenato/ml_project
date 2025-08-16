@@ -307,6 +307,81 @@ services:
     networks:
       - ml_network
 
+  # Discount Campaign Scheduler Service
+  discount_campaign_scheduler:
+    build:
+      context: ./discount_campaign_scheduler
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/15
+      CELERY_BROKER_URL: redis://redis:6379/15
+      CELERY_RESULT_BACKEND: redis://redis:6379/15
+      BACKEND_URL: http://backend:8000
+      ML_API_URL: https://api.mercadolibre.com
+      ML_CLIENT_ID: ${ML_CLIENT_ID:-}
+      ML_CLIENT_SECRET: ${ML_CLIENT_SECRET:-}
+      SECRET_KEY: discount-campaign-scheduler-secret-key-change-in-production
+      SCHEDULE_CHECK_INTERVAL_MINUTES: 5
+      METRICS_COLLECTION_INTERVAL_HOURS: 1
+    ports:
+      - "8015:8015"
+    depends_on:
+      - db
+      - redis
+      - backend
+    networks:
+      - ml_network
+
+  # Celery Worker for Discount Campaign Scheduler
+  discount_scheduler_worker:
+    build:
+      context: ./discount_campaign_scheduler
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A app.tasks worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/15
+      CELERY_BROKER_URL: redis://redis:6379/15
+      CELERY_RESULT_BACKEND: redis://redis:6379/15
+      BACKEND_URL: http://backend:8000
+      ML_API_URL: https://api.mercadolibre.com
+      ML_CLIENT_ID: ${ML_CLIENT_ID:-}
+      ML_CLIENT_SECRET: ${ML_CLIENT_SECRET:-}
+      SECRET_KEY: discount-campaign-scheduler-secret-key-change-in-production
+    depends_on:
+      - db
+      - redis
+      - discount_campaign_scheduler
+    networks:
+      - ml_network
+
+  # Celery Beat for Discount Campaign Scheduler
+  discount_scheduler_beat:
+    build:
+      context: ./discount_campaign_scheduler
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A app.tasks beat --loglevel=info
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/15
+      CELERY_BROKER_URL: redis://redis:6379/15
+      CELERY_RESULT_BACKEND: redis://redis:6379/15
+      BACKEND_URL: http://backend:8000
+      ML_API_URL: https://api.mercadolibre.com
+      ML_CLIENT_ID: ${ML_CLIENT_ID:-}
+      ML_CLIENT_SECRET: ${ML_CLIENT_SECRET:-}
+      SECRET_KEY: discount-campaign-scheduler-secret-key-change-in-production
+    depends_on:
+      - db
+      - redis
+      - discount_campaign_scheduler
+    networks:
+      - ml_network
+
   # Celery Workers for async processing
   celery_worker:
     build:

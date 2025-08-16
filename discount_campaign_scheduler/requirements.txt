@@ -1,0 +1,45 @@
+# Core Framework
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.11.7
+pydantic-settings==2.6.1
+
+# Database & ORM
+sqlmodel>=0.0.22
+psycopg2-binary==2.9.10
+SQLAlchemy==2.0.36
+
+# HTTP Client for ML API integration
+httpx==0.28.1
+requests==2.32.3
+
+# Authentication & Security
+python-jose==3.5.0
+passlib==1.7.4
+python-multipart==0.0.20
+
+# Task Scheduling & Background Jobs
+celery==5.3.4
+redis==5.2.1
+
+# Configuration & Environment
+python-dotenv==1.0.1
+
+# Data Processing & Analysis
+pandas==2.2.3
+numpy==1.26.4
+scikit-learn==1.5.2
+
+# Date/Time handling
+python-dateutil==2.9.0
+
+# Monitoring & Metrics
+prometheus-client==0.21.1
+
+# Testing
+pytest==8.4.1
+pytest-asyncio==0.24.0
+httpx==0.28.1
+
+# Grafana Integration
+grafana-api>=1.0.3

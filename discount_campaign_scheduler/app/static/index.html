@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discount Campaign Scheduler</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .campaign-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .campaign-card:hover {
+            border-left-color: #3b82f6;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .suggestion-card {
+            transition: all 0.3s ease;
+        }
+        .suggestion-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .status-active { color: #10b981; }
+        .status-paused { color: #f59e0b; }
+        .status-draft { color: #6b7280; }
+        .status-scheduled { color: #8b5cf6; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <i class="fas fa-percentage text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-900">Discount Campaign Scheduler</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="refreshBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>Atualizar
+                    </button>
+                    <div class="relative">
+                        <button class="flex items-center text-gray-700 hover:text-gray-900">
+                            <i class="fas fa-user-circle text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Dashboard Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-bullhorn text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Campanhas Ativas</p>
+                        <p id="activeCampaigns" class="text-2xl font-semibold text-gray-900">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-mouse-pointer text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Cliques Totais</p>
+                        <p id="totalClicks" class="text-2xl font-semibold text-gray-900">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Conversões</p>
+                        <p id="totalConversions" class="text-2xl font-semibold text-gray-900">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                        <i class="fas fa-dollar-sign text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Vendas Totais</p>
+                        <p id="totalSales" class="text-2xl font-semibold text-gray-900">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Strategic Suggestions -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-lg font-semibold text-gray-900">
+                                <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                                Sugestões Estratégicas
+                            </h2>
+                            <button id="refreshSuggestions" class="text-blue-600 hover:text-blue-800 text-sm">
+                                <i class="fas fa-sync-alt mr-1"></i>Atualizar
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Top 5 anúncios com maior potencial para campanha de desconto</p>
+                    </div>
+                    <div class="p-6">
+                        <div id="suggestionsContainer" class="space-y-4">
+                            <!-- Suggestions will be loaded here -->
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
+                                <p>Carregando sugestões...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campaign Scheduling -->
+                <div class="bg-white rounded-lg shadow mt-8">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-calendar-alt text-blue-500 mr-2"></i>
+                            Agendamento de Campanhas
+                        </h2>
+                        <p class="text-sm text-gray-600 mt-1">Configure horários automáticos para ativação/pausa</p>
+                    </div>
+                    <div class="p-6">
+                        <div id="schedulesContainer">
+                            <!-- Schedules will be loaded here -->
+                            <div class="text-center py-4 text-gray-500">
+                                <p>Selecione uma campanha para configurar agendamentos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Campaigns Sidebar -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-list text-green-500 mr-2"></i>
+                            Campanhas Ativas
+                        </h2>
+                        <p class="text-sm text-gray-600 mt-1">Anúncios com campanhas ativas</p>
+                    </div>
+                    <div class="divide-y divide-gray-200" id="activeCampaignsList">
+                        <!-- Active campaigns will be loaded here -->
+                        <div class="p-4 text-center text-gray-500">
+                            <i class="fas fa-spinner fa-spin text-xl mb-2"></i>
+                            <p class="text-sm">Carregando campanhas...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Summary -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-chart-line text-purple-500 mr-2"></i>
+                            Performance
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600">Taxa de Conversão</span>
+                                <span id="conversionRate" class="text-sm font-semibold text-gray-900">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600">Score de Engajamento</span>
+                                <span id="engagementScore" class="text-sm font-semibold text-gray-900">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600">Próxima Execução</span>
+                                <span id="nextExecution" class="text-sm font-semibold text-gray-900">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Campaign Modal -->
+    <div id="createCampaignModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Criar Campanha de Desconto</h3>
+                </div>
+                <div class="p-6">
+                    <form id="createCampaignForm">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Campanha</label>
+                                <input type="text" id="campaignName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ID do Item</label>
+                                <input type="text" id="itemId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Desconto (%)</label>
+                                <input type="number" id="discountPercentage" min="1" max="50" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                    <button id="cancelCampaign" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">Cancelar</button>
+                    <button id="createCampaign" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Criar Campanha</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock authentication token (in real app, get from login)
+        const AUTH_TOKEN = 'Bearer mock_token_123';
+        const API_BASE = '/api';
+
+        // State management
+        let currentData = {
+            suggestions: [],
+            campaigns: [],
+            dashboard: {},
+            schedules: []
+        };
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            loadSuggestions();
+            loadActiveCampaigns();
+            
+            // Event listeners
+            document.getElementById('refreshBtn').addEventListener('click', refreshAllData);
+            document.getElementById('refreshSuggestions').addEventListener('click', loadSuggestions);
+            document.getElementById('createCampaign').addEventListener('click', handleCreateCampaign);
+            document.getElementById('cancelCampaign').addEventListener('click', closeModal);
+        });
+
+        // API calls
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: {
+                        'Authorization': AUTH_TOKEN,
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                showError('Erro ao conectar com o servidor');
+                return null;
+            }
+        }
+
+        // Load dashboard overview data
+        async function loadDashboardData() {
+            const data = await apiCall('/dashboard/overview');
+            if (data) {
+                currentData.dashboard = data;
+                updateDashboardUI(data);
+            }
+        }
+
+        // Load strategic suggestions
+        async function loadSuggestions() {
+            const data = await apiCall('/suggestions/');
+            if (data) {
+                currentData.suggestions = data;
+                renderSuggestions(data);
+            }
+        }
+
+        // Load active campaigns
+        async function loadActiveCampaigns() {
+            const data = await apiCall('/campaigns/?status=active');
+            if (data) {
+                currentData.campaigns = data;
+                renderActiveCampaigns(data);
+            }
+        }
+
+        // Update dashboard UI
+        function updateDashboardUI(data) {
+            if (data.summary) {
+                document.getElementById('activeCampaigns').textContent = data.summary.active_campaigns || 0;
+                document.getElementById('totalClicks').textContent = formatNumber(data.summary.total_clicks || 0);
+                document.getElementById('totalConversions').textContent = formatNumber(data.summary.total_conversions || 0);
+                document.getElementById('totalSales').textContent = formatCurrency(data.summary.total_sales || 0);
+                document.getElementById('conversionRate').textContent = `${(data.summary.avg_conversion_rate || 0).toFixed(2)}%`;
+                document.getElementById('engagementScore').textContent = (data.summary.avg_engagement_score || 0).toFixed(2);
+            }
+        }
+
+        // Render suggestions
+        function renderSuggestions(suggestions) {
+            const container = document.getElementById('suggestionsContainer');
+            
+            if (!suggestions || suggestions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-lightbulb text-3xl mb-3"></i>
+                        <p>Nenhuma sugestão disponível no momento</p>
+                        <button onclick="loadSuggestions()" class="mt-2 text-blue-600 hover:text-blue-800">Atualizar sugestões</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = suggestions.map(suggestion => `
+                <div class="suggestion-card bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0">
+                            <img src="${suggestion.image_url || '/static/placeholder.jpg'}" 
+                                 alt="${suggestion.title}" 
+                                 class="w-16 h-16 object-cover rounded-lg">
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-gray-900 text-sm mb-1">${suggestion.title}</h3>
+                            <p class="text-sm text-gray-600 mb-2">Preço: ${formatCurrency(suggestion.current_price)}</p>
+                            <div class="flex items-center space-x-4 text-xs text-gray-500 mb-3">
+                                <span><i class="fas fa-mouse-pointer mr-1"></i>${formatNumber(suggestion.recent_clicks)} cliques</span>
+                                <span><i class="fas fa-star mr-1"></i>Score: ${suggestion.potential_score.toFixed(2)}</span>
+                                <span><i class="fas fa-chart-line mr-1"></i>Tendência: ${suggestion.engagement_trend.toFixed(2)}</span>
+                            </div>
+                            <button onclick="applyCampaign('${suggestion.item_id}', '${suggestion.title}')" 
+                                    class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-plus mr-1"></i>Aplicar Campanha
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render active campaigns
+        function renderActiveCampaigns(campaigns) {
+            const container = document.getElementById('activeCampaignsList');
+            
+            if (!campaigns || campaigns.length === 0) {
+                container.innerHTML = `
+                    <div class="p-4 text-center text-gray-500">
+                        <i class="fas fa-bullhorn text-2xl mb-2"></i>
+                        <p class="text-sm">Nenhuma campanha ativa</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = campaigns.map(campaign => `
+                <div class="p-4 hover:bg-gray-50 cursor-pointer" onclick="selectCampaign(${campaign.id})">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-percentage text-blue-600"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">${campaign.campaign_name}</p>
+                            <p class="text-xs text-gray-500">${campaign.discount_percentage}% de desconto</p>
+                            <div class="flex items-center mt-1">
+                                <span class="text-xs text-gray-500 mr-2">${formatNumber(campaign.total_clicks || 0)} cliques</span>
+                                <span class="status-${campaign.status} text-xs font-medium">${campaign.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Apply campaign to suggestion
+        function applyCampaign(itemId, title) {
+            document.getElementById('itemId').value = itemId;
+            document.getElementById('campaignName').value = `Desconto - ${title}`;
+            document.getElementById('discountPercentage').value = '15';
+            document.getElementById('createCampaignModal').classList.remove('hidden');
+        }
+
+        // Handle create campaign
+        async function handleCreateCampaign() {
+            const campaignData = {
+                item_id: document.getElementById('itemId').value,
+                campaign_name: document.getElementById('campaignName').value,
+                discount_percentage: parseFloat(document.getElementById('discountPercentage').value)
+            };
+
+            const result = await apiCall('/campaigns/', {
+                method: 'POST',
+                body: JSON.stringify(campaignData)
+            });
+
+            if (result) {
+                showSuccess('Campanha criada com sucesso!');
+                closeModal();
+                refreshAllData();
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('createCampaignModal').classList.add('hidden');
+        }
+
+        // Select campaign for scheduling
+        function selectCampaign(campaignId) {
+            // Implementation for campaign selection and scheduling
+            console.log('Selected campaign:', campaignId);
+        }
+
+        // Refresh all data
+        function refreshAllData() {
+            loadDashboardData();
+            loadSuggestions();
+            loadActiveCampaigns();
+        }
+
+        // Utility functions
+        function formatNumber(num) {
+            return new Intl.NumberFormat('pt-BR').format(num);
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(amount);
+        }
+
+        function showSuccess(message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function showError(message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+    </script>
+</body>
+</html>

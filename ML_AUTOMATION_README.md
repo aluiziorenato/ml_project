@@ -61,6 +61,32 @@ Otimiza textos de anúncios usando técnicas de IA para melhorar conversões.
 - `POST /api/compliance/check` - Verificação de conformidade com regras ML
 - `POST /api/auto-test` - Teste automático via integração com simulador
 
+### 4. 🎯 Agendador de Campanhas de Desconto (`discount_campaign_scheduler`)
+**Porta: 8015**
+
+Módulo independente para agendamento estratégico de campanhas de desconto com sugestões baseadas em IA.
+
+**Funcionalidades:**
+- Sugestões estratégicas dos 5 melhores anúncios para campanhas de desconto
+- Agendamento automático por dia/horário para ativação/pausa de campanhas
+- Integração direta com API Mercado Libre `/seller-promotions`
+- Coleta de métricas: cliques, impressões, conversões, taxa de conversão
+- Previsão de performance baseada em histórico e ML
+- Dashboard visual com gráficos de tendências
+- Interface web para configuração e monitoramento
+- Autenticação OAuth2 Mercado Libre
+
+**Endpoints:**
+- `GET /` - Informações do serviço
+- `GET /ui` - Interface web
+- `GET /health` - Health check
+- `POST /api/campaigns/` - Criar campanha de desconto
+- `GET /api/campaigns/` - Listar campanhas
+- `POST /api/campaigns/{id}/schedules` - Criar agendamento
+- `GET /api/suggestions/` - Obter sugestões estratégicas
+- `GET /api/dashboard/overview` - Dashboard de performance
+- `GET /api/campaigns/{id}/prediction` - Previsão de performance
+
 ## 🏗️ Arquitetura
 
 ```
