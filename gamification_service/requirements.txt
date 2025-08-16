@@ -1,0 +1,16 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.11.7
+pydantic-settings==2.6.1
+psycopg2-binary==2.9.10
+SQLAlchemy==2.0.36
+sqlmodel>=0.0.22
+python-dotenv==1.0.1
+python-multipart==0.0.20
+requests==2.32.3
+redis==5.2.1
+celery==5.4.0
+prometheus-client==0.21.1
+python-logging-loki==0.3.1
+httpx==0.28.1
+six==1.17.0

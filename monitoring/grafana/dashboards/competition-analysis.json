@@ -1,0 +1,261 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "🏆 Competition Analysis Dashboard",
+    "tags": ["competition", "ml-project"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Market Position Trend",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "avg(competition_position_rank{user_id=\"$user_id\"})",
+            "refId": "A",
+            "legendFormat": "Our Position"
+          },
+          {
+            "expr": "count(competition_active_competitors{user_id=\"$user_id\"})",
+            "refId": "B",
+            "legendFormat": "Active Competitors"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": { "mode": "none", "group": "A" },
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "axisColorMode": "text",
+              "scaleDistribution": { "type": "linear" },
+              "axisCenteredZero": false,
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Market Share Distribution",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (company) (market_share_percentage)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": { "hideFrom": { "legend": false, "tooltip": false, "vis": false } },
+            "mappings": [],
+            "unit": "percent"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "pieType": "pie",
+          "tooltip": { "mode": "single", "sort": "none" },
+          "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+          "displayLabels": ["name", "percent"]
+        }
+      },
+      {
+        "id": 3,
+        "title": "Ad Competition Count by Keyword",
+        "type": "barchart",
+        "targets": [
+          {
+            "expr": "sum by (keyword) (ads_competing_count{user_id=\"$user_id\"})",
+            "refId": "A",
+            "legendFormat": "{{keyword}}"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "continuous-GrYlRd" },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "axisColorMode": "text",
+              "axisGridShow": true,
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 80,
+              "gradientMode": "none",
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": { "type": "linear" },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": { "mode": "none", "group": "A" },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "orientation": "auto",
+          "barWidth": 0.97,
+          "barRadius": 0.5,
+          "groupWidth": 0.7,
+          "legend": { "displayMode": "list", "placement": "bottom" },
+          "tooltip": { "mode": "single", "sort": "none" },
+          "text": { "valueSize": 12 }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Competition Wins vs Losses",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(competition_wins_total{user_id=\"$user_id\"})",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(competition_losses_total{user_id=\"$user_id\"})",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 6, "w": 12, "x": 0, "y": 16 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "text": {},
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 5,
+        "title": "Price Comparison vs Competitors",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "avg(our_price{user_id=\"$user_id\"})",
+            "refId": "A",
+            "legendFormat": "Our Price"
+          },
+          {
+            "expr": "avg(competitor_avg_price{user_id=\"$user_id\"})",
+            "refId": "B",
+            "legendFormat": "Competitor Avg Price"
+          }
+        ],
+        "gridPos": { "h": 6, "w": 12, "x": 12, "y": 16 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": { "mode": "none", "group": "A" },
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "axisColorMode": "text",
+              "scaleDistribution": { "type": "linear" },
+              "axisCenteredZero": false,
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "unit": "currencyBRL"
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "user_id",
+          "type": "query",
+          "query": "label_values(user_id)",
+          "refresh": 1,
+          "includeAll": false,
+          "multi": false
+        }
+      ]
+    },
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}
