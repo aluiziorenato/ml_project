@@ -14,10 +14,10 @@ responses==0.25.0
 
 # Memory and performance monitoring
 psutil==7.0.0
-memory-profiler==0.62.0
+memory-profiler==0.61.0
 
 # Database testing
-pytest-postgresql==5.0.1
+pytest-postgresql==7.0.2
 pytest-asyncpg==0.3.0
 
 # Additional testing utilities

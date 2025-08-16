@@ -5,10 +5,11 @@ from .routers import api_endpoints, api_tests, oauth, auth, proxy, seo, categori
 from .config import settings
 from app.routers import meli_routes
 from app.startup import create_admin_user
+from app.monitoring.sentry_config import init_sentry
 import logging
 
-
-
+# Initialize Sentry before other imports
+init_sentry()
 
 logging.basicConfig(
     level=logging.DEBUG,

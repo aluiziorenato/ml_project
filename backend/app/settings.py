@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     app_base_url: str = Field(default="http://localhost:8000", alias="APP_BASE_URL")
     env: str = Field(default="development", alias="ENV")
     
+    # Sentry Configuration
+    sentry_dsn: Optional[str] = Field(default=None, alias="SENTRY_DSN")
+    sentry_environment: str = Field(default="development", alias="SENTRY_ENVIRONMENT")
+    sentry_traces_sample_rate: float = Field(default=0.1, alias="SENTRY_TRACES_SAMPLE_RATE")
+    
     # Admin User
     admin_email: str = Field(default="admin@example.com", alias="ADMIN_EMAIL")
     admin_password: Optional[str] = Field(default=None, alias="ADMIN_PASSWORD")

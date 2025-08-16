@@ -1,0 +1,23 @@
+{
+  "user": {
+    "email": "test@example.com",
+    "password": "testpassword123",
+    "fullName": "Test User"
+  },
+  "api": {
+    "baseUrl": "http://localhost:8000",
+    "endpoints": {
+      "health": "/health",
+      "login": "/auth/token",
+      "register": "/auth/register",
+      "userProfile": "/users/me"
+    }
+  },
+  "testData": {
+    "validEmail": "test@example.com",
+    "invalidEmail": "invalid-email",
+    "validPassword": "testpassword123",
+    "weakPassword": "123",
+    "apiTestPath": "/health"
+  }
+}
