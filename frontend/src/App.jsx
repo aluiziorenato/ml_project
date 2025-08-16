@@ -9,12 +9,15 @@ import OAuthManager from './pages/OAuthManager'
 import ApiTester from './pages/ApiTester'
 import SEOIntelligenceDashboard from './pages/SEOIntelligenceDashboard'
 import AnunciosPage from './pages/AnunciosPage'
+import StrategicMode from './pages/StrategicMode'
 
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard')
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'strategic-mode':
+        return <StrategicMode />
       case 'anuncios':
         return <AnunciosPage />
       case 'seo-intelligence':
