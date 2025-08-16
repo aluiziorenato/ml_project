@@ -22,6 +22,16 @@ export default function Header({ currentView, setCurrentView }) {
             📊 Main Dashboard
           </button>
           <button
+            onClick={() => setCurrentView('anuncios')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              currentView === 'anuncios'
+                ? 'bg-white text-indigo-600 font-medium'
+                : 'bg-indigo-500 hover:bg-indigo-400 text-white'
+            }`}
+          >
+            📦 Gerenciar Anúncios
+          </button>
+          <button
             onClick={() => setCurrentView('seo-intelligence')}
             className={`px-4 py-2 rounded-lg transition-colors ${
               currentView === 'seo-intelligence'
