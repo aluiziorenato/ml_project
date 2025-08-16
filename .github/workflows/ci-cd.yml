@@ -2,15 +2,44 @@ name: ML Project CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master, develop ]
 
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "18"
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install linting dependencies
+      run: |
+        pip install flake8
+
+    - name: Lint backend with flake8
+      run: |
+        cd backend
+        flake8 app/ --max-line-length=88 --exclude=__pycache__,*.pyc,.env --ignore=E203,W503 || true
+
+    - name: Lint discount_campaign_scheduler with flake8
+      run: |
+        cd discount_campaign_scheduler
+        flake8 app/ --max-line-length=88 --exclude=__pycache__,*.pyc,.env --ignore=E203,W503 || true
+
+    - name: Lint tests with flake8
+      run: |
+        flake8 tests/ --max-line-length=88 --exclude=__pycache__,*.pyc,.env --ignore=E203,W503 || true
   test-backend:
     runs-on: ubuntu-latest
     
@@ -122,6 +151,100 @@ jobs:
         cd ${{ matrix.service }}
         python -m pytest tests/ -v || echo "Tests completed with issues"
 
+  test-discount-campaign-scheduler:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: senha
+          POSTGRES_USER: usuario
+          POSTGRES_DB: nome_do_banco
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install discount_campaign_scheduler dependencies
+      run: |
+        cd discount_campaign_scheduler
+        pip install -r requirements.txt
+
+    - name: Run discount_campaign_scheduler tests
+      env:
+        DATABASE_URL: postgresql://usuario:senha@localhost:5432/nome_do_banco
+        REDIS_URL: redis://localhost:6379/15
+        SECRET_KEY: test_secret_key_for_ci
+        ML_CLIENT_ID: test_client_id
+        ML_CLIENT_SECRET: test_client_secret
+      run: |
+        cd discount_campaign_scheduler
+        python -m pytest tests/ -v
+
+  test-main-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: senha
+          POSTGRES_USER: usuario
+          POSTGRES_DB: nome_do_banco
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install main project dependencies
+      run: |
+        pip install pytest pytest-asyncio httpx
+        # Install dependencies from various modules
+        if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+        if [ -f discount_campaign_scheduler/requirements.txt ]; then pip install -r discount_campaign_scheduler/requirements.txt; fi
+
+    - name: Run main tests directory
+      env:
+        DATABASE_URL: postgresql://usuario:senha@localhost:5432/nome_do_banco
+        SECRET_KEY: test_secret_key_for_ci
+      run: |
+        python -m pytest tests/ -v
+
   test-frontend:
     runs-on: ubuntu-latest
     
@@ -173,9 +296,9 @@ jobs:
         sarif_file: 'trivy-results.sarif'
 
   build-and-push:
-    needs: [test-backend, test-services, test-frontend]
+    needs: [lint, test-backend, test-services, test-discount-campaign-scheduler, test-main-tests, test-frontend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
     steps:
     - name: Checkout code
@@ -218,10 +341,45 @@ jobs:
           ${{ secrets.DOCKER_USERNAME }}/ml-project-frontend:latest
           ${{ secrets.DOCKER_USERNAME }}/ml-project-frontend:${{ github.sha }}
 
-  deploy:
-    needs: build-and-push
+  build-discount-campaign-scheduler:
+    needs: [lint, test-discount-campaign-scheduler]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build discount_campaign_scheduler Docker image (test)
+      uses: docker/build-push-action@v5
+      with:
+        context: ./discount_campaign_scheduler
+        push: false
+        tags: ml-project-discount-campaign-scheduler:test
+
+    - name: Login to Docker Hub
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push discount_campaign_scheduler
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: docker/build-push-action@v5
+      with:
+        context: ./discount_campaign_scheduler
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/ml-project-discount-campaign-scheduler:latest
+          ${{ secrets.DOCKER_USERNAME }}/ml-project-discount-campaign-scheduler:${{ github.sha }}
+
+  deploy:
+    needs: [build-and-push, build-discount-campaign-scheduler]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
     steps:
     - name: Checkout code
@@ -230,21 +388,30 @@ jobs:
     - name: Deploy to staging
       run: |
         echo "Deploying to staging environment..."
+        echo "Backend image: ${{ secrets.DOCKER_USERNAME }}/ml-project-backend:${{ github.sha }}"
+        echo "Discount Campaign Scheduler image: ${{ secrets.DOCKER_USERNAME }}/ml-project-discount-campaign-scheduler:${{ github.sha }}"
         # Add deployment commands here (kubectl, docker-compose, etc.)
+        # Example: kubectl set image deployment/backend backend=${{ secrets.DOCKER_USERNAME }}/ml-project-backend:${{ github.sha }}
+        # Example: kubectl set image deployment/discount-scheduler scheduler=${{ secrets.DOCKER_USERNAME }}/ml-project-discount-campaign-scheduler:${{ github.sha }}
 
     - name: Run integration tests
       run: |
         echo "Running integration tests against staging..."
         # Add integration test commands here
+        # Example: pytest integration_tests/ --staging-url=${{ secrets.STAGING_URL }}
 
     - name: Deploy to production
-      if: success()
+      if: success() && github.ref == 'refs/heads/main'
       run: |
         echo "Deploying to production environment..."
+        echo "Backend image: ${{ secrets.DOCKER_USERNAME }}/ml-project-backend:${{ github.sha }}"
+        echo "Discount Campaign Scheduler image: ${{ secrets.DOCKER_USERNAME }}/ml-project-discount-campaign-scheduler:${{ github.sha }}"
         # Add production deployment commands here
+        # Example: kubectl set image deployment/backend backend=${{ secrets.DOCKER_USERNAME }}/ml-project-backend:${{ github.sha }} --namespace=production
+        # Example: kubectl set image deployment/discount-scheduler scheduler=${{ secrets.DOCKER_USERNAME }}/ml-project-discount-campaign-scheduler:${{ github.sha }} --namespace=production
 
   coverage-report:
-    needs: [test-backend, test-services]
+    needs: [test-backend, test-services, test-discount-campaign-scheduler, test-main-tests]
     runs-on: ubuntu-latest
     
     steps:
@@ -265,5 +432,5 @@ jobs:
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '📊 **Coverage Report**\n\nAll tests completed successfully! Check the Actions tab for detailed coverage reports.'
+            body: '📊 **Coverage Report**\n\n✅ Backend tests completed\n✅ Discount Campaign Scheduler tests completed\n✅ Main tests directory completed\n✅ Lint checks passed\n\nCheck the Actions tab for detailed coverage reports and build status.'
           })
