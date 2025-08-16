@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db import init_db
-from .routers import api_endpoints, api_tests, oauth, auth, proxy, seo, categories, anuncios
+from .routers import api_endpoints, api_tests, oauth, auth, proxy, seo, categories, anuncios, meli_services_router
 from .config import settings
 from app.routers import meli_routes
 from app.startup import create_admin_user
@@ -83,6 +83,7 @@ app.add_middleware(
 
 # Rotas
 app.include_router(meli_routes.router, prefix="/meli", tags=["Mercado Livre"])
+app.include_router(meli_services_router.router, prefix="/meli", tags=["Mercado Livre Services"])
 app.include_router(auth.router)  # aqui ele já traz o prefix="/api/auth"
 app.include_router(api_endpoints.router)
 app.include_router(api_tests.router)
