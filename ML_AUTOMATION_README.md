@@ -54,8 +54,12 @@ Otimiza textos de anúncios usando técnicas de IA para melhorar conversões.
 **Endpoints:**
 - `GET /` - Interface web
 - `GET /health` - Health check
-- `POST /api/optimize-copy` - Otimizar texto
+- `POST /api/optimize-copy` - Otimizar texto com IA
 - `POST /api/ab-test` - Criar teste A/B
+- `POST /api/keywords/suggest` - Sugestões de palavras-chave com IA
+- `POST /api/segment-optimization` - Otimização por segmento de audiência
+- `POST /api/compliance/check` - Verificação de conformidade com regras ML
+- `POST /api/auto-test` - Teste automático via integração com simulador
 
 ## 🏗️ Arquitetura
 

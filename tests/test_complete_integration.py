@@ -221,9 +221,80 @@ class TestCompleteMLSystemIntegration:
         }
         
         response = self.optimizer_client.post("/api/keywords/suggest", json=keyword_data)
-        # Note: This endpoint needs to be implemented in the optimizer service
+        assert response.status_code == 200
         
-        print("✅ Keyword suggestion test noted for implementation")
+        result = response.json()
+        assert "suggested_keywords" in result
+        assert "category_trends" in result
+        assert "competitor_keywords" in result
+        assert "optimization_opportunities" in result
+        assert len(result["suggested_keywords"]) <= keyword_data["max_suggestions"]
+        
+        print("✅ Optimizer AI keyword suggestions passed")
+
+    def test_optimizer_segment_optimization(self):
+        """Test segment optimization functionality"""
+        segment_data = {
+            "text": "Produto de qualidade com ótimo preço",
+            "target_segments": ["b2b", "b2c_premium", "millennial"],
+            "product_category": "electronics"
+        }
+        
+        response = self.optimizer_client.post("/api/segment-optimization", json=segment_data)
+        assert response.status_code == 200
+        
+        result = response.json()
+        assert "optimized_texts" in result
+        assert "performance_predictions" in result
+        assert "recommendations" in result
+        
+        # Verify we have results for all segments
+        for segment in segment_data["target_segments"]:
+            assert segment in result["optimized_texts"]
+            assert segment in result["performance_predictions"]
+            assert segment in result["recommendations"]
+        
+        print("✅ Optimizer AI segment optimization passed")
+
+    def test_optimizer_compliance_check(self):
+        """Test compliance checking functionality"""
+        compliance_data = {
+            "text": "Smartphone Samsung Galaxy com garantia do fabricante",
+            "product_category": "electronics"
+        }
+        
+        response = self.optimizer_client.post("/api/compliance/check", json=compliance_data)
+        assert response.status_code == 200
+        
+        result = response.json()
+        assert "is_compliant" in result
+        assert "violations" in result
+        assert "compliance_score" in result
+        assert "risk_level" in result
+        assert "recommendations" in result
+        
+        print("✅ Optimizer AI compliance check passed")
+
+    def test_optimizer_auto_test(self):
+        """Test auto testing functionality"""
+        auto_test_data = {
+            "optimized_text": "Smartphone Samsung Galaxy - melhor escolha para jovens",
+            "original_text": "Smartphone Samsung usado",
+            "product_category": "electronics",
+            "target_audience": "young_adults",
+            "budget": 1000.0
+        }
+        
+        response = self.optimizer_client.post("/api/auto-test", json=auto_test_data)
+        assert response.status_code == 200
+        
+        result = response.json()
+        assert "test_id" in result
+        assert "original_performance" in result
+        assert "optimized_performance" in result
+        assert "test_status" in result
+        
+        print("✅ Optimizer AI auto testing passed")
     
     def test_system_integration_workflow(self):
         """Test complete workflow integration between services"""
