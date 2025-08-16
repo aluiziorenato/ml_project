@@ -281,6 +281,32 @@ services:
     networks:
       - ml_network
 
+  # Campaign Automation Service
+  campaign_automation_service:
+    build:
+      context: ./campaign_automation_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/14
+      SIMULATOR_SERVICE_URL: http://simulator_service:8001
+      OPTIMIZER_AI_URL: http://optimizer_ai:8003
+      LEARNING_SERVICE_URL: http://learning_service:8002
+      CELERY_BROKER_URL: redis://redis:6379/14
+      CELERY_RESULT_BACKEND: redis://redis:6379/14
+      SECRET_KEY: campaign-automation-secret-key-change-in-production
+    ports:
+      - "8014:8014"
+    depends_on:
+      - db
+      - redis
+      - simulator_service
+      - learning_service
+      - optimizer_ai
+    networks:
+      - ml_network
+
   # Celery Workers for async processing
   celery_worker:
     build:
