@@ -1,15 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db import init_db
-from .routers import api_endpoints, api_tests, oauth, auth, proxy, seo, categories, anuncios, meli_services_router
+from .routers import api_endpoints, api_tests, oauth, auth, proxy, seo, categories, anuncios, meli_services_router, metrics
 from .config import settings
 from app.routers import meli_routes
 from app.startup import create_admin_user
 from app.monitoring.sentry_config import init_sentry
+from app.monitoring.loki_config import setup_loki_logging
+from app.monitoring.middleware import MonitoringMiddleware
 import logging
 
 # Initialize Sentry before other imports
 init_sentry()
+
+# Initialize Loki logging
+setup_loki_logging()
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -69,6 +74,10 @@ app = FastAPI(
         {
             "name": "Health",
             "description": "Health checks e monitoramento"
+        },
+        {
+            "name": "Metrics",
+            "description": "Métricas Prometheus e monitoramento do sistema"
         }
     ]
 )
@@ -81,6 +90,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add monitoring middleware
+app.add_middleware(MonitoringMiddleware)
+
 # Rotas
 app.include_router(meli_routes.router, prefix="/meli", tags=["Mercado Livre"])
 app.include_router(meli_services_router.router, prefix="/meli", tags=["Mercado Livre Services"])
@@ -92,6 +104,7 @@ app.include_router(proxy.router)
 app.include_router(seo.router)
 app.include_router(categories.router)
 app.include_router(anuncios.router)
+app.include_router(metrics.router)
 
 @app.on_event("startup")
 def on_startup():
