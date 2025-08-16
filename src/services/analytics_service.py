@@ -6,8 +6,12 @@ from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime
 
-from ..core.analytics import MLPredictor, MLOptimizer, PredictionResult, OptimizationResult
-from ..core.storage import DataManager, DataQuery
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from core.analytics import MLPredictor, MLOptimizer, PredictionResult, OptimizationResult
+from core.storage import DataManager, DataQuery
 
 logger = logging.getLogger(__name__)
 

@@ -7,8 +7,12 @@ from datetime import datetime, timedelta
 import logging
 import asyncio
 
-from ..core.scheduler import TaskManager, TaskResult, TaskStatus
-from ..core.storage import DataManager, DataQuery
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from core.scheduler import TaskManager, TaskResult, TaskStatus
+from core.storage import DataManager, DataQuery
 
 logger = logging.getLogger(__name__)
 
