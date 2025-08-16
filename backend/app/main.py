@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db import init_db
-from .routers import api_endpoints, api_tests, oauth, auth, proxy, seo, categories
+from .routers import api_endpoints, api_tests, oauth, auth, proxy, seo, categories, anuncios
 from .config import settings
 from app.routers import meli_routes
 from app.startup import create_admin_user
@@ -89,6 +89,7 @@ app.include_router(oauth.router)
 app.include_router(proxy.router)
 app.include_router(seo.router)
 app.include_router(categories.router)
+app.include_router(anuncios.router)
 
 @app.on_event("startup")
 def on_startup():
