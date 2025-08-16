@@ -37,6 +37,7 @@ class MetricsAnalyzer:
             cpa = (cost / conversions) if conversions > 0 else 0.0
             roas = (revenue / cost) if cost > 0 else 0.0
             roi = ((revenue - cost) / cost * 100) if cost > 0 else 0.0
+            acos = (cost / revenue * 100) if revenue > 0 else 0.0  # Advertising Cost of Sales
             
             # Create metric record
             metric = CampaignMetric(
@@ -52,7 +53,8 @@ class MetricsAnalyzer:
                 cpc=cpc,
                 cpa=cpa,
                 roas=roas,
-                roi=roi
+                roi=roi,
+                acos=acos
             )
             
             self.db.add(metric)
@@ -113,7 +115,8 @@ class MetricsAnalyzer:
                     "cpc": metric.cpc,
                     "cpa": metric.cpa,
                     "roas": metric.roas,
-                    "roi": metric.roi
+                    "roi": metric.roi,
+                    "acos": metric.acos
                 }
                 for metric in metrics
             ]
@@ -153,6 +156,7 @@ class MetricsAnalyzer:
                 cpa = (metric.cost / metric.conversions) if metric.conversions > 0 else 0.0
                 roas = (metric.revenue / metric.cost) if metric.cost > 0 else 0.0
                 roi = ((metric.revenue - metric.cost) / metric.cost * 100) if metric.cost > 0 else 0.0
+                acos = (metric.cost / metric.revenue * 100) if metric.revenue > 0 else 0.0
                 
                 result.append({
                     "date": metric.date.isoformat(),
@@ -165,7 +169,8 @@ class MetricsAnalyzer:
                     "cpc": round(cpc, 2),
                     "cpa": round(cpa, 2),
                     "roas": round(roas, 2),
-                    "roi": round(roi, 2)
+                    "roi": round(roi, 2),
+                    "acos": round(acos, 2)
                 })
             
             return result

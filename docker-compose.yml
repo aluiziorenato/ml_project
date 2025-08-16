@@ -301,9 +301,27 @@ services:
     depends_on:
       - db
       - redis
-      - simulator_service
-      - learning_service
-      - optimizer_ai
+    networks:
+      - ml_network
+
+  # ACOS (Advertising Cost of Sales) Service
+  acos_service:
+    build:
+      context: ./acos_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/15
+      CAMPAIGN_SERVICE_URL: http://campaign_automation_service:8014
+      AI_SERVICE_URL: http://ai_predictive:8005
+      JWT_SECRET_KEY: acos-service-secret-key-change-in-production
+    ports:
+      - "8016:8016"
+    depends_on:
+      - db
+      - redis
+      - campaign_automation_service
     networks:
       - ml_network
 
