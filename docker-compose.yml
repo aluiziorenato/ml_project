@@ -281,6 +281,26 @@ services:
     networks:
       - ml_network
 
+  # Campaign Automation Service
+  campaign_automation:
+    build:
+      context: ./campaign_automation
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/14
+    ports:
+      - "8014:8014"
+    depends_on:
+      - db
+      - redis
+      - simulator_service
+      - learning_service
+      - optimizer_ai
+    networks:
+      - ml_network
+
   # Celery Workers for async processing
   celery_worker:
     build:
