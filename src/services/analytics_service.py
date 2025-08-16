@@ -11,6 +11,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.analytics import MLPredictor, MLOptimizer, PredictionResult, OptimizationResult
+from core.analytics.genetic_optimizer import GeneticOptimizer, GeneticConfig
 from core.storage import DataManager, DataQuery
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ class AnalyticsService:
     def __init__(self, data_manager: Optional[DataManager] = None):
         self.predictor = MLPredictor()
         self.optimizer = MLOptimizer()
+        self.genetic_optimizer = GeneticOptimizer()
         self.data_manager = data_manager or DataManager()
         self.models = {
             "linear": MLPredictor("linear"),
@@ -118,7 +120,8 @@ class AnalyticsService:
     async def optimize_budget_allocation(self, 
                                        campaigns: List[Dict[str, Any]], 
                                        total_budget: float,
-                                       objective: str = "maximize_roi") -> OptimizationResult:
+                                       objective: str = "maximize_roi",
+                                       optimization_method: str = "greedy") -> OptimizationResult:
         """
         Optimize budget allocation across campaigns.
         
@@ -126,20 +129,27 @@ class AnalyticsService:
             campaigns: List of campaign configurations
             total_budget: Total budget to allocate
             objective: Optimization objective
+            optimization_method: "greedy" or "genetic" 
             
         Returns:
             OptimizationResult with optimized allocation
         """
         try:
-            result = self.optimizer.optimize_budget_allocation(
-                campaigns, total_budget, objective
-            )
+            if optimization_method == "genetic":
+                result = self.genetic_optimizer.optimize_budget_allocation(
+                    campaigns, total_budget, objective
+                )
+            else:
+                result = self.optimizer.optimize_budget_allocation(
+                    campaigns, total_budget, objective
+                )
             
             # Store optimization result
             await self._store_optimization_result(result, "budget_allocation", {
                 "total_budget": total_budget,
                 "campaigns_count": len(campaigns),
-                "objective": objective
+                "objective": objective,
+                "optimization_method": optimization_method
             })
             
             return result
@@ -183,26 +193,34 @@ class AnalyticsService:
     
     async def optimize_campaign_parameters(self, 
                                          current_params: Dict[str, Any],
-                                         performance_history: List[Dict[str, Any]]) -> OptimizationResult:
+                                         performance_history: List[Dict[str, Any]],
+                                         optimization_method: str = "greedy") -> OptimizationResult:
         """
         Optimize campaign parameters based on performance history.
         
         Args:
             current_params: Current campaign parameters
             performance_history: Historical performance data
+            optimization_method: "greedy" or "genetic"
             
         Returns:
             OptimizationResult with optimized parameters
         """
         try:
-            result = self.optimizer.optimize_campaign_parameters(
-                current_params, performance_history
-            )
+            if optimization_method == "genetic":
+                result = self.genetic_optimizer.optimize_campaign_parameters(
+                    current_params, performance_history
+                )
+            else:
+                result = self.optimizer.optimize_campaign_parameters(
+                    current_params, performance_history
+                )
             
             # Store optimization result
             await self._store_optimization_result(result, "parameter_optimization", {
                 "history_data_points": len(performance_history),
-                "parameters_count": len(current_params)
+                "parameters_count": len(current_params),
+                "optimization_method": optimization_method
             })
             
             return result
@@ -398,3 +416,141 @@ class AnalyticsService:
             
         except Exception as e:
             logger.error(f"Failed to store optimization result: {str(e)}")
+    
+    async def configure_genetic_algorithm(self, config: Dict[str, Any]) -> bool:
+        """
+        Configure genetic algorithm parameters.
+        
+        Args:
+            config: Configuration parameters for genetic algorithm
+            
+        Returns:
+            True if configuration successful
+        """
+        try:
+            genetic_config = GeneticConfig(
+                population_size=config.get("population_size", 50),
+                max_generations=config.get("max_generations", 100),
+                crossover_rate=config.get("crossover_rate", 0.8),
+                mutation_rate=config.get("mutation_rate", 0.1),
+                tournament_size=config.get("tournament_size", 3),
+                elitism_rate=config.get("elitism_rate", 0.1),
+                convergence_threshold=config.get("convergence_threshold", 1e-6),
+                max_stagnant_generations=config.get("max_stagnant_generations", 20)
+            )
+            
+            self.genetic_optimizer = GeneticOptimizer(genetic_config)
+            logger.info(f"Genetic algorithm configured with {config}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to configure genetic algorithm: {str(e)}")
+            return False
+    
+    async def set_optimization_constraints(self, constraints: Dict[str, Dict[str, float]]) -> bool:
+        """
+        Set optimization constraints for both optimizers.
+        
+        Args:
+            constraints: Dict with parameter names and their min/max bounds
+            
+        Returns:
+            True if constraints set successfully
+        """
+        try:
+            self.optimizer.set_constraints(constraints)
+            self.genetic_optimizer.set_constraints(constraints)
+            logger.info(f"Optimization constraints set for {len(constraints)} parameters")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to set optimization constraints: {str(e)}")
+            return False
+    
+    async def get_genetic_algorithm_status(self) -> Dict[str, Any]:
+        """
+        Get status and performance metrics of the genetic algorithm.
+        
+        Returns:
+            Dictionary with genetic algorithm status
+        """
+        try:
+            status = {
+                "configured": self.genetic_optimizer is not None,
+                "config": {
+                    "population_size": self.genetic_optimizer.config.population_size,
+                    "max_generations": self.genetic_optimizer.config.max_generations,
+                    "crossover_rate": self.genetic_optimizer.config.crossover_rate,
+                    "mutation_rate": self.genetic_optimizer.config.mutation_rate,
+                    "tournament_size": self.genetic_optimizer.config.tournament_size,
+                    "elitism_rate": self.genetic_optimizer.config.elitism_rate
+                },
+                "current_generation": self.genetic_optimizer.generation,
+                "population_size": len(self.genetic_optimizer.population),
+                "best_fitness": self.genetic_optimizer.best_chromosome.fitness if self.genetic_optimizer.best_chromosome else None,
+                "fitness_history_length": len(self.genetic_optimizer.fitness_history),
+                "parameter_bounds_count": len(self.genetic_optimizer.parameter_bounds),
+                "constraints_count": len(self.genetic_optimizer.constraints),
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            return status
+            
+        except Exception as e:
+            logger.error(f"Failed to get genetic algorithm status: {str(e)}")
+            return {"error": str(e), "configured": False}
+    
+    async def get_optimization_comparison(self, 
+                                        campaigns: List[Dict[str, Any]], 
+                                        total_budget: float,
+                                        objective: str = "maximize_roi") -> Dict[str, Any]:
+        """
+        Compare optimization results between greedy and genetic algorithms.
+        
+        Args:
+            campaigns: List of campaign configurations
+            total_budget: Total budget to allocate
+            objective: Optimization objective
+            
+        Returns:
+            Dictionary comparing both optimization methods
+        """
+        try:
+            # Run both optimizations
+            greedy_result = await self.optimize_budget_allocation(
+                campaigns, total_budget, objective, "greedy"
+            )
+            
+            genetic_result = await self.optimize_budget_allocation(
+                campaigns, total_budget, objective, "genetic"
+            )
+            
+            comparison = {
+                "greedy": {
+                    "optimized_parameters": greedy_result.optimized_parameters,
+                    "expected_improvement": greedy_result.expected_improvement,
+                    "confidence_score": greedy_result.confidence_score,
+                    "iterations_used": greedy_result.iterations_used,
+                    "metadata": greedy_result.metadata
+                },
+                "genetic": {
+                    "optimized_parameters": genetic_result.optimized_parameters,
+                    "expected_improvement": genetic_result.expected_improvement,
+                    "confidence_score": genetic_result.confidence_score,
+                    "iterations_used": genetic_result.iterations_used,
+                    "metadata": genetic_result.metadata
+                },
+                "comparison": {
+                    "improvement_difference": genetic_result.expected_improvement - greedy_result.expected_improvement,
+                    "confidence_difference": genetic_result.confidence_score - greedy_result.confidence_score,
+                    "genetic_better": genetic_result.expected_improvement > greedy_result.expected_improvement,
+                    "genetic_more_confident": genetic_result.confidence_score > greedy_result.confidence_score
+                },
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            return comparison
+            
+        except Exception as e:
+            logger.error(f"Failed to compare optimization methods: {str(e)}")
+            raise
