@@ -32,6 +32,7 @@ class BudgetOptimizationRequest(BaseModel):
     campaigns: List[Dict[str, Any]]
     total_budget: float
     objective: str = "maximize_roi"
+    optimization_method: str = "greedy"  # "greedy" or "genetic"
 
 
 class KeywordOptimizationRequest(BaseModel):
@@ -43,6 +44,28 @@ class KeywordOptimizationRequest(BaseModel):
 class ParameterOptimizationRequest(BaseModel):
     current_params: Dict[str, Any]
     performance_history: List[Dict[str, Any]]
+    optimization_method: str = "greedy"  # "greedy" or "genetic"
+
+
+class GeneticConfigRequest(BaseModel):
+    population_size: Optional[int] = 50
+    max_generations: Optional[int] = 100
+    crossover_rate: Optional[float] = 0.8
+    mutation_rate: Optional[float] = 0.1
+    tournament_size: Optional[int] = 3
+    elitism_rate: Optional[float] = 0.1
+    convergence_threshold: Optional[float] = 1e-6
+    max_stagnant_generations: Optional[int] = 20
+
+
+class OptimizationConstraintsRequest(BaseModel):
+    constraints: Dict[str, Dict[str, float]]
+
+
+class OptimizationComparisonRequest(BaseModel):
+    campaigns: List[Dict[str, Any]]
+    total_budget: float
+    objective: str = "maximize_roi"
 
 
 def get_analytics_service() -> AnalyticsService:
@@ -133,7 +156,8 @@ async def optimize_budget(
         result = await service.optimize_budget_allocation(
             request.campaigns,
             request.total_budget,
-            request.objective
+            request.objective,
+            request.optimization_method
         )
         return {
             "optimization_id": f"budget_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -189,7 +213,8 @@ async def optimize_parameters(
     try:
         result = await service.optimize_campaign_parameters(
             request.current_params,
-            request.performance_history
+            request.performance_history,
+            request.optimization_method
         )
         return {
             "optimization_id": f"params_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -252,3 +277,83 @@ async def health_check() -> Dict[str, str]:
         "service": "analytics",
         "timestamp": datetime.now().isoformat()
     }
+
+
+@router.post("/genetic/configure", response_model=Dict[str, Any])
+async def configure_genetic_algorithm(
+    request: GeneticConfigRequest,
+    service: AnalyticsService = Depends(get_analytics_service)
+) -> Dict[str, Any]:
+    """
+    Configure genetic algorithm parameters.
+    """
+    try:
+        config = request.dict(exclude_unset=True)
+        success = await service.configure_genetic_algorithm(config)
+        
+        return {
+            "success": success,
+            "message": "Genetic algorithm configured successfully" if success else "Configuration failed",
+            "config": config,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Genetic algorithm configuration failed: {str(e)}")
+
+
+@router.post("/constraints/set", response_model=Dict[str, Any])
+async def set_optimization_constraints(
+    request: OptimizationConstraintsRequest,
+    service: AnalyticsService = Depends(get_analytics_service)
+) -> Dict[str, Any]:
+    """
+    Set optimization constraints for parameters.
+    """
+    try:
+        success = await service.set_optimization_constraints(request.constraints)
+        
+        return {
+            "success": success,
+            "message": "Constraints set successfully" if success else "Failed to set constraints",
+            "constraints_count": len(request.constraints),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to set constraints: {str(e)}")
+
+
+@router.get("/genetic/status", response_model=Dict[str, Any])
+async def get_genetic_algorithm_status(
+    service: AnalyticsService = Depends(get_analytics_service)
+) -> Dict[str, Any]:
+    """
+    Get status and configuration of the genetic algorithm.
+    """
+    try:
+        status = await service.get_genetic_algorithm_status()
+        return status
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get genetic algorithm status: {str(e)}")
+
+
+@router.post("/optimize/compare", response_model=Dict[str, Any])
+async def compare_optimization_methods(
+    request: OptimizationComparisonRequest,
+    service: AnalyticsService = Depends(get_analytics_service)
+) -> Dict[str, Any]:
+    """
+    Compare optimization results between greedy and genetic algorithms.
+    """
+    try:
+        comparison = await service.get_optimization_comparison(
+            request.campaigns,
+            request.total_budget,
+            request.objective
+        )
+        
+        return {
+            "comparison_id": f"comp_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            **comparison
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Optimization comparison failed: {str(e)}")
