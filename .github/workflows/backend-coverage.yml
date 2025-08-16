@@ -1,0 +1,70 @@
+name: Backend Tests and Coverage
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov pytest-asyncio coverage email-validator
+        pip install -r requirements.txt
+    
+    - name: Set up environment variables
+      working-directory: ./backend
+      run: |
+        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_db" >> .env
+        echo "SECRET_KEY=test-secret-key-for-testing" >> .env
+        echo "ADMIN_EMAIL=admin@test.com" >> .env
+        echo "ADMIN_PASSWORD=testpassword123" >> .env
+    
+    - name: Run tests with coverage
+      working-directory: ./backend
+      run: |
+        python -m pytest tests/ --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        directory: ./backend
+        fail_ci_if_error: true
+        verbose: true
+    
+    - name: Coverage Report
+      working-directory: ./backend
+      run: |
+        coverage report --show-missing --fail-under=100
