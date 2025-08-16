@@ -61,7 +61,22 @@ frontend/dist/
 # Coverage
 .coverage
 htmlcov/
+coverage.xml
 
 # Testing
 .pytest_cache/
 .tox/
+
+# Benchmarks
+.benchmarks/
+
+# Memory profiler
+*.dat
+
+# Load testing
+locustfile.py
+
+# Temporary files
+/tmp/
+.tmp/
+*.tmp
