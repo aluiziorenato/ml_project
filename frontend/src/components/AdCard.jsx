@@ -3,12 +3,14 @@ import {
   Eye, Edit, Play, Pause, DollarSign, Package, 
   Camera, Settings, TrendingUp, ExternalLink, Star 
 } from 'lucide-react'
+import AIOptimizationModal from './AIOptimizationModal'
 
 export default function AdCard({ ad, selected, onSelect, onAction }) {
   const [showActions, setShowActions] = useState(false)
   const [editing, setEditing] = useState({ price: false, stock: false })
   const [newPrice, setNewPrice] = useState(ad.price || 0)
   const [newStock, setNewStock] = useState(ad.available_quantity || 0)
+  const [showAIModal, setShowAIModal] = useState(false)
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -232,7 +234,7 @@ export default function AdCard({ ad, selected, onSelect, onAction }) {
                 </button>
                 <button
                   onClick={() => {
-                    // TODO: Abrir otimização IA
+                    setShowAIModal(true)
                     setShowActions(false)
                   }}
                   className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
@@ -263,6 +265,14 @@ export default function AdCard({ ad, selected, onSelect, onAction }) {
           onClick={() => setShowActions(false)}
         />
       )}
+
+      {/* Modal de otimização IA */}
+      <AIOptimizationModal
+        ad={ad}
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onSave={onAction}
+      />
     </div>
   )
 }

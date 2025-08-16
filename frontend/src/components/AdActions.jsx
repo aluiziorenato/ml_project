@@ -4,6 +4,7 @@ import {
   Image, FileText, Settings, Eye, BarChart3, Calendar,
   AlertTriangle, CheckCircle, X 
 } from 'lucide-react'
+import AIOptimizationModal from './AIOptimizationModal'
 
 export default function AdActions({ 
   ads, 
@@ -18,6 +19,8 @@ export default function AdActions({
   const [bulkPrice, setBulkPrice] = useState('')
   const [bulkStock, setBulkStock] = useState('')
   const [bulkDiscount, setBulkDiscount] = useState('')
+  const [showAIModal, setShowAIModal] = useState(false)
+  const [selectedAdForAI, setSelectedAdForAI] = useState(null)
 
   const selectedAdsData = ads.filter(ad => selectedAds.includes(ad.id))
   const hasSelection = selectedAds.length > 0
@@ -106,11 +109,23 @@ export default function AdActions({
 
           {/* Otimizar com IA */}
           <button
-            onClick={() => selectedAds.forEach(id => onOpenOptimization(id))}
+            onClick={() => {
+              if (selectedAds.length === 1) {
+                // Se apenas um anúncio selecionado, abre modal
+                const ad = selectedAdsData[0]
+                setSelectedAdForAI(ad)
+                setShowAIModal(true)
+              } else {
+                // Para múltiplos anúncios, processa em lote
+                selectedAds.forEach(id => onOpenOptimization(id))
+              }
+            }}
             className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 text-purple-700"
           >
             <TrendingUp className="h-4 w-4" />
-            <span className="text-sm font-medium">Otimizar IA</span>
+            <span className="text-sm font-medium">
+              {selectedAds.length === 1 ? 'Otimizar IA' : `Otimizar ${selectedAds.length} ads`}
+            </span>
           </button>
 
           {/* Ver Analytics */}
@@ -271,6 +286,17 @@ export default function AdActions({
           ))}
         </div>
       </div>
+
+      {/* Modal de otimização IA */}
+      <AIOptimizationModal
+        ad={selectedAdForAI}
+        isOpen={showAIModal}
+        onClose={() => {
+          setShowAIModal(false)
+          setSelectedAdForAI(null)
+        }}
+        onSave={onAction}
+      />
     </div>
   )
 }

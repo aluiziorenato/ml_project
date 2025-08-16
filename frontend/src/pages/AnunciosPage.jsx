@@ -150,6 +150,25 @@ export default function AnunciosPage() {
     }
   }
 
+  // Abre otimização IA para um anúncio
+  const openAIOptimization = (adId) => {
+    // Esta função é chamada pelo AdActions, mas o modal
+    // é gerenciado individualmente por cada componente
+    console.log(`Abrindo otimização IA para anúncio ${adId}`)
+  }
+
+  // Abre editor para múltiplos anúncios
+  const openEditor = (adIds) => {
+    // TODO: Implementar editor em lote
+    console.log(`Abrindo editor para ${adIds.length} anúncios`)
+  }
+
+  // Abre analytics para anúncios
+  const openAnalytics = (adIds) => {
+    // TODO: Implementar analytics
+    console.log(`Abrindo analytics para ${adIds.length} anúncios`)
+  }
+
   // Executa ação em lote
   const performBulkAction = async (action, value = null) => {
     const promises = selectedAds.map(adId => performAdAction(adId, action, value))
@@ -269,33 +288,15 @@ export default function AnunciosPage() {
 
         {/* Ações em lote */}
         {selectedAds.length > 0 && (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {selectedAds.length} anúncio(s) selecionado(s)
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => performBulkAction('pause')}
-                  className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
-                >
-                  Pausar
-                </button>
-                <button
-                  onClick={() => performBulkAction('activate')}
-                  className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-                >
-                  Ativar
-                </button>
-                <button
-                  onClick={() => setSelectedAds([])}
-                  className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
-                >
-                  Limpar
-                </button>
-              </div>
-            </div>
-          </div>
+          <AdActions
+            ads={ads}
+            selectedAds={selectedAds}
+            onAction={performAdAction}
+            onBulkAction={performBulkAction}
+            onOpenOptimization={openAIOptimization}
+            onOpenEditor={openEditor}
+            onOpenAnalytics={openAnalytics}
+          />
         )}
       </AnimatedCard>
 

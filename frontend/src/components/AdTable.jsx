@@ -3,12 +3,15 @@ import {
   Eye, Edit, Play, Pause, ExternalLink, TrendingUp, 
   ChevronUp, ChevronDown, Star, Package 
 } from 'lucide-react'
+import AIOptimizationModal from './AIOptimizationModal'
 
 export default function AdTable({ ads, selectedAds, onSelect, onSelectAll, onAction }) {
   const [sortField, setSortField] = useState('')
   const [sortDirection, setSortDirection] = useState('asc')
   const [editingCell, setEditingCell] = useState(null)
   const [editValue, setEditValue] = useState('')
+  const [showAIModal, setShowAIModal] = useState(false)
+  const [selectedAdForAI, setSelectedAdForAI] = useState(null)
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -301,7 +304,8 @@ export default function AdTable({ ads, selectedAds, onSelect, onSelectAll, onAct
                   {/* Otimização IA */}
                   <button
                     onClick={() => {
-                      // TODO: Abrir otimização IA
+                      setSelectedAdForAI(ad)
+                      setShowAIModal(true)
                     }}
                     className="p-1 rounded hover:bg-gray-200 text-purple-600"
                     title="Otimizar com IA"
@@ -331,6 +335,17 @@ export default function AdTable({ ads, selectedAds, onSelect, onSelectAll, onAct
           Nenhum anúncio encontrado
         </div>
       )}
+
+      {/* Modal de otimização IA */}
+      <AIOptimizationModal
+        ad={selectedAdForAI}
+        isOpen={showAIModal}
+        onClose={() => {
+          setShowAIModal(false)
+          setSelectedAdForAI(null)
+        }}
+        onSave={onAction}
+      />
     </div>
   )
 }

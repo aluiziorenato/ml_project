@@ -20,6 +20,7 @@ from app.services.mercadolibre import (
 from pydantic import BaseModel
 import logging
 import asyncio
+import httpx
 
 logger = logging.getLogger("app.anuncios")
 router = APIRouter(prefix="/api/anuncios", tags=["anuncios"])
@@ -51,6 +52,16 @@ class FilterRequest(BaseModel):
     min_stock: Optional[int] = None
     max_stock: Optional[int] = None
     search: Optional[str] = None  # Busca por título
+
+class AIOptimizationRequest(BaseModel):
+    original_text: str
+    target_audience: Optional[str] = "general"
+    product_category: Optional[str] = "electronics"
+    optimization_goal: Optional[str] = "conversions"
+    keywords: Optional[List[str]] = []
+    segment: Optional[str] = "millennial"
+    budget_range: Optional[str] = "medium"
+    priority_metrics: Optional[List[str]] = ["seo", "readability", "compliance"]
 
 # ============================
 # Rotas Principais
@@ -445,3 +456,145 @@ async def get_ads_summary(token: str = Depends(get_valid_token)):
     except Exception as e:
         logger.error(f"Erro ao buscar resumo: {e}")
         raise HTTPException(status_code=400, detail=f"Erro ao buscar resumo: {str(e)}")
+
+# ============================
+# Endpoints de Otimização IA
+# ============================
+
+@router.post("/{item_id}/optimize")
+async def optimize_ad_with_ai(
+    item_id: str,
+    optimization_request: AIOptimizationRequest,
+    token: str = Depends(get_valid_token)
+):
+    """
+    Otimiza um anúncio usando o serviço de IA.
+    """
+    try:
+        # Busca detalhes atuais do item
+        item_data = await get_item_details(token, item_id)
+        
+        # Configura dados para otimização IA
+        ai_request = {
+            "original_text": optimization_request.original_text or item_data.get("title", ""),
+            "target_audience": optimization_request.target_audience,
+            "product_category": optimization_request.product_category,
+            "optimization_goal": optimization_request.optimization_goal,
+            "keywords": optimization_request.keywords,
+            "segment": optimization_request.segment,
+            "budget_range": optimization_request.budget_range,
+            "priority_metrics": optimization_request.priority_metrics
+        }
+        
+        # Chama serviço de otimização IA
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                "http://optimizer_ai:8003/api/optimize-copy",
+                json=ai_request
+            )
+            response.raise_for_status()
+            ai_result = response.json()
+        
+        return {
+            "success": True,
+            "original_item": item_data,
+            "optimization": ai_result,
+            "item_id": item_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao otimizar anúncio {item_id} com IA: {e}")
+        raise HTTPException(status_code=400, detail=f"Erro na otimização IA: {str(e)}")
+
+@router.post("/{item_id}/apply-optimization")
+async def apply_ai_optimization(
+    item_id: str,
+    optimized_data: Dict[str, Any],
+    token: str = Depends(get_valid_token)
+):
+    """
+    Aplica otimização IA a um anúncio específico.
+    """
+    try:
+        # Atualiza o item com dados otimizados
+        updated_item = await update_item(token, item_id, optimized_data)
+        
+        return {
+            "success": True,
+            "updated_item": updated_item,
+            "message": f"Otimização aplicada ao anúncio {item_id}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao aplicar otimização ao anúncio {item_id}: {e}")
+        raise HTTPException(status_code=400, detail=f"Erro ao aplicar otimização: {str(e)}")
+
+@router.post("/generate-keywords")
+async def generate_keywords_for_ad(
+    request: Dict[str, Any],
+    token: str = Depends(get_valid_token)
+):
+    """
+    Gera sugestões de palavras-chave para um produto usando IA.
+    """
+    try:
+        # Chama serviço de sugestão de palavras-chave
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                "http://optimizer_ai:8003/api/keywords/suggest",
+                json=request
+            )
+            response.raise_for_status()
+            keywords_result = response.json()
+        
+        return {
+            "success": True,
+            "keywords": keywords_result
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao gerar palavras-chave: {e}")
+        raise HTTPException(status_code=400, detail=f"Erro ao gerar palavras-chave: {str(e)}")
+
+@router.post("/bulk-optimize")
+async def bulk_optimize_ads(
+    item_ids: List[str],
+    optimization_request: AIOptimizationRequest,
+    token: str = Depends(get_valid_token)
+):
+    """
+    Otimiza múltiplos anúncios em lote usando IA.
+    """
+    try:
+        optimization_results = []
+        
+        for item_id in item_ids:
+            try:
+                # Otimiza cada item individualmente
+                item_result = await optimize_ad_with_ai(item_id, optimization_request, token)
+                optimization_results.append({
+                    "item_id": item_id,
+                    "success": True,
+                    "optimization": item_result["optimization"]
+                })
+            except Exception as e:
+                optimization_results.append({
+                    "item_id": item_id,
+                    "success": False,
+                    "error": str(e)
+                })
+        
+        successful_optimizations = [r for r in optimization_results if r["success"]]
+        failed_optimizations = [r for r in optimization_results if not r["success"]]
+        
+        return {
+            "success": True,
+            "total_processed": len(item_ids),
+            "successful": len(successful_optimizations),
+            "failed": len(failed_optimizations),
+            "results": optimization_results
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro na otimização em lote: {e}")
+        raise HTTPException(status_code=400, detail=f"Erro na otimização em lote: {str(e)}")
