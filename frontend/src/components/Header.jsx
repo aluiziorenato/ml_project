@@ -10,7 +10,7 @@ export default function Header({ currentView, setCurrentView }) {
         </div>
         
         {/* Navigation */}
-        <nav className="flex space-x-4">
+        <nav className="flex flex-wrap gap-2">
           <button
             onClick={() => setCurrentView('dashboard')}
             className={`px-4 py-2 rounded-lg transition-colors ${
@@ -19,7 +19,37 @@ export default function Header({ currentView, setCurrentView }) {
                 : 'bg-indigo-500 hover:bg-indigo-400 text-white'
             }`}
           >
-            📊 Main Dashboard
+            📊 Dashboard
+          </button>
+          <button
+            onClick={() => setCurrentView('products')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              currentView === 'products'
+                ? 'bg-white text-indigo-600 font-medium'
+                : 'bg-indigo-500 hover:bg-indigo-400 text-white'
+            }`}
+          >
+            📦 Produtos
+          </button>
+          <button
+            onClick={() => setCurrentView('orders')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              currentView === 'orders'
+                ? 'bg-white text-indigo-600 font-medium'
+                : 'bg-indigo-500 hover:bg-indigo-400 text-white'
+            }`}
+          >
+            📋 Pedidos
+          </button>
+          <button
+            onClick={() => setCurrentView('campaigns')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              currentView === 'campaigns'
+                ? 'bg-white text-indigo-600 font-medium'
+                : 'bg-indigo-500 hover:bg-indigo-400 text-white'
+            }`}
+          >
+            📢 Campanhas
           </button>
           <button
             onClick={() => setCurrentView('anuncios')}
@@ -29,7 +59,7 @@ export default function Header({ currentView, setCurrentView }) {
                 : 'bg-indigo-500 hover:bg-indigo-400 text-white'
             }`}
           >
-            📦 Gerenciar Anúncios
+            🔧 Anúncios
           </button>
           <button
             onClick={() => setCurrentView('seo-intelligence')}

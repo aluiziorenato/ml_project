@@ -18,5 +18,9 @@ pytest-regressions==2.8.2     # Snapshot testing for regression tests
 # Error Monitoring
 sentry-sdk[fastapi]==2.18.0  # Error monitoring and performance tracking
 
+# Monitoring and Logging
+prometheus-client==0.21.1     # Prometheus metrics collection
+python-logging-loki==0.3.1    # Loki logging integration
+
 # Compatibilidade
 six==1.17.0             # Compatibilidade entre Python 2 e 3 (pode ser removido se usar apenas Python 3.6+)

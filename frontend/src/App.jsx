@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
+import Products from './pages/Products'
+import Orders from './pages/Orders'
+import Campaigns from './pages/Campaigns'
 import ApiConfig from './pages/ApiConfig'
 import OAuthManager from './pages/OAuthManager'
 import ApiTester from './pages/ApiTester'
@@ -16,6 +19,12 @@ export default function App() {
         return <AnunciosPage />
       case 'seo-intelligence':
         return <SEOIntelligenceDashboard />
+      case 'products':
+        return <Products />
+      case 'orders':
+        return <Orders />
+      case 'campaigns':
+        return <Campaigns />
       case 'dashboard':
       default:
         return (
