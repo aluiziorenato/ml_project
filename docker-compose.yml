@@ -1,4 +1,5 @@
 services:
+  # Database Services
   db:
     image: postgres:15
     restart: unless-stopped
@@ -10,6 +11,8 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - ml_network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -21,7 +24,21 @@ services:
       - "8080:80"
     depends_on:
       - db
+    networks:
+      - ml_network
 
+  # Cache & Message Queue
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ml_network
+
+  # Core Services
   backend:
     build:
       context: ./backend
@@ -30,16 +47,15 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      # Garante que DATABASE_URL usa o host 'db' para o container backend conectar ao Postgres
-       DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
-
-
-
-
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
       - db
+      - redis
+    networks:
+      - ml_network
 
   frontend:
     build:
@@ -47,13 +63,260 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      # Se o frontend se comunica com o backend dentro do Docker, pode ser http://backend:8000
-      # Se rodar no host, localhost funciona
       VITE_BACKEND_URL: http://localhost:8000
     ports:
       - "3000:80"
     depends_on:
       - backend
+    networks:
+      - ml_network
+
+  # Existing ML Services
+  simulator_service:
+    build:
+      context: ./simulator_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/1
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  learning_service:
+    build:
+      context: ./learning_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/2
+    ports:
+      - "8002:8002"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  optimizer_ai:
+    build:
+      context: ./optimizer_ai
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/3
+    ports:
+      - "8003:8003"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  # SEO Intelligence Modules
+  ai_predictive:
+    build:
+      context: ./modules/ai_predictive
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/4
+    ports:
+      - "8004:8004"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  dynamic_optimization:
+    build:
+      context: ./modules/dynamic_optimization
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/5
+    ports:
+      - "8005:8005"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  competitor_intelligence:
+    build:
+      context: ./modules/competitor_intelligence
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/6
+    ports:
+      - "8006:8006"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  cross_platform:
+    build:
+      context: ./modules/cross_platform
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/7
+    ports:
+      - "8007:8007"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  semantic_intent:
+    build:
+      context: ./modules/semantic_intent
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/8
+    ports:
+      - "8008:8008"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  trend_detector:
+    build:
+      context: ./modules/trend_detector
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/9
+    ports:
+      - "8009:8009"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  market_pulse:
+    build:
+      context: ./modules/market_pulse
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/10
+    ports:
+      - "8010:8010"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  visual_seo:
+    build:
+      context: ./modules/visual_seo
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/11
+    ports:
+      - "8011:8011"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  chatbot_assistant:
+    build:
+      context: ./modules/chatbot_assistant
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/12
+    ports:
+      - "8012:8012"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  roi_prediction:
+    build:
+      context: ./modules/roi_prediction
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/13
+    ports:
+      - "8013:8013"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  # Celery Workers for async processing
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A app.celery_app worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  # Celery Beat for scheduled tasks
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A app.celery_app beat --loglevel=info
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+networks:
+  ml_network:
+    driver: bridge
 
 volumes:
   pgdata:
+  redis_data:
