@@ -89,6 +89,10 @@ app.include_router(campaigns.router)
 app.include_router(suggestions.router)
 app.include_router(dashboard.router)
 
+# Include keywords router
+from app.api import keywords
+app.include_router(keywords.router)
+
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):

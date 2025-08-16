@@ -222,4 +222,87 @@ class PredictionResponse(BaseModel):
     predicted_conversions: int
     predicted_sales: float
     confidence_score: float
+
+
+class Keyword(SQLModel, table=True):
+    """Model for storing Google Keyword Planner data"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    seller_id: str = Field(index=True)
+    
+    # Keyword data from CSV
+    keyword: str = Field(index=True)
+    search_volume: int = Field(default=0)
+    competition: str = Field(description="High, Medium, Low")
+    competition_score: Optional[float] = Field(default=None, ge=0, le=1)
+    top_of_page_bid_low: Optional[float] = Field(default=None)
+    top_of_page_bid_high: Optional[float] = Field(default=None)
+    
+    # Additional computed fields
+    relevance_score: Optional[float] = Field(default=None, description="Relevance to seller's products")
+    category_match: Optional[str] = Field(default=None, description="Matched product category")
+    
+    # Upload metadata
+    upload_batch_id: str = Field(index=True, description="UUID for the upload batch")
+    created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime(timezone=True)))
+    is_active: bool = Field(default=True)
+
+
+class KeywordUploadBatch(SQLModel, table=True):
+    """Model for tracking keyword upload batches"""
+    id: str = Field(primary_key=True, description="UUID for the batch")
+    seller_id: str = Field(index=True)
+    
+    # Upload information
+    filename: str
+    total_keywords: int = Field(default=0)
+    processed_keywords: int = Field(default=0)
+    failed_keywords: int = Field(default=0)
+    
+    # Processing status
+    status: str = Field(default="processing")  # processing, completed, failed
+    error_message: Optional[str] = Field(default=None)
+    
+    # Timestamps
+    uploaded_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime(timezone=True)))
+    completed_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True)))
+
+
+class KeywordSuggestionMatch(SQLModel, table=True):
+    """Model for linking keywords to product suggestions"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    suggestion_id: int = Field(foreign_key="itemsuggestion.id")
+    keyword_id: int = Field(foreign_key="keyword.id")
+    
+    # Match metadata
+    match_score: float = Field(description="How well the keyword matches the product")
+    match_type: str = Field(description="exact, broad, phrase")
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime(timezone=True)))
+
+
+# Response models for keyword endpoints
+class KeywordResponse(BaseModel):
+    """Schema for keyword response"""
+    id: int
+    keyword: str
+    search_volume: int
+    competition: str
+    competition_score: Optional[float]
+    top_of_page_bid_low: Optional[float]
+    top_of_page_bid_high: Optional[float]
+    relevance_score: Optional[float]
+    category_match: Optional[str]
+    created_at: datetime
+
+
+class KeywordUploadResponse(BaseModel):
+    """Schema for CSV upload response"""
+    batch_id: str
+    filename: str
+    total_keywords: int
+    processed_keywords: int
+    failed_keywords: int
+    status: str
+    upload_summary: dict
     prediction_period_days: int

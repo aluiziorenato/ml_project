@@ -14,6 +14,8 @@ from app.services.suggestions_service import suggestions_service
 from app.services.metrics_service import metrics_service
 from app.services.prediction_service import prediction_service
 from app.services.auth_service import auth_service
+from app.services.microservice_integration import microservice_integration
+from app.services.keyword_service import keyword_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -48,6 +50,87 @@ async def create_campaign(
     
     logger.info(f"Created campaign {campaign.id} for seller {seller_id}")
     return campaign
+
+
+@router.post("/enhanced", response_model=dict)
+async def create_enhanced_campaign(
+    campaign_data: CampaignCreate,
+    optimize_copy: bool = Query(True, description="Apply AI copy optimization using keywords"),
+    user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Create a new discount campaign with AI optimization and microservice integration"""
+    seller_id = user.get("seller_id")
+    if not seller_id:
+        raise HTTPException(status_code=400, detail="Seller ID not found")
+    
+    try:
+        # Get available keywords for this seller
+        keywords = keyword_service.get_keywords_for_seller(seller_id, session)
+        keyword_strings = [k.keyword for k in keywords[:10]]  # Use top 10 keywords
+        
+        # Prepare campaign base data
+        campaign_base_data = {
+            "seller_id": seller_id,
+            "item_id": campaign_data.item_id,
+            "campaign_name": campaign_data.campaign_name,
+            "discount_percentage": campaign_data.discount_percentage,
+            "start_date": campaign_data.start_date.isoformat() if campaign_data.start_date else None,
+            "end_date": campaign_data.end_date.isoformat() if campaign_data.end_date else None,
+            "title": getattr(campaign_data, 'title', ''),
+            "description": getattr(campaign_data, 'description', ''),
+            "category": getattr(campaign_data, 'category', '')
+        }
+        
+        # Orchestrate campaign creation with microservices
+        orchestration_result = await microservice_integration.orchestrate_campaign_creation(
+            campaign_base_data=campaign_base_data,
+            keywords=keyword_strings,
+            seller_id=seller_id
+        )
+        
+        # Create the campaign in database
+        campaign = DiscountCampaign(
+            seller_id=seller_id,
+            item_id=campaign_data.item_id,
+            campaign_name=campaign_data.campaign_name,
+            discount_percentage=campaign_data.discount_percentage,
+            start_date=campaign_data.start_date,
+            end_date=campaign_data.end_date,
+            status=CampaignStatus.DRAFT
+        )
+        
+        session.add(campaign)
+        session.commit()
+        session.refresh(campaign)
+        
+        # Return comprehensive result
+        result = {
+            "campaign": {
+                "id": campaign.id,
+                "seller_id": campaign.seller_id,
+                "item_id": campaign.item_id,
+                "campaign_name": campaign.campaign_name,
+                "discount_percentage": campaign.discount_percentage,
+                "status": campaign.status,
+                "created_at": campaign.created_at
+            },
+            "orchestration_result": orchestration_result,
+            "keywords_used": keyword_strings,
+            "enhancement_summary": {
+                "copy_optimized": orchestration_result.get("optimization_applied", False),
+                "performance_predicted": orchestration_result.get("performance_predicted", False),
+                "scheduling_configured": orchestration_result.get("scheduling_configured", False),
+                "subperformance_analyzed": "subperformance_analysis" in orchestration_result
+            }
+        }
+        
+        logger.info(f"Created enhanced campaign {campaign.id} for seller {seller_id} with AI optimization")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error creating enhanced campaign: {e}")
+        raise HTTPException(status_code=500, detail="Error creating enhanced campaign")
 
 
 @router.get("/", response_model=List[DiscountCampaign])

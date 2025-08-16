@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session
+from sqlmodel import Session, select
 from typing import Dict, List
 from datetime import datetime, timedelta
 from app.core.database import get_session
 from app.services.auth_service import get_current_seller, get_current_user, auth_service
 from app.services.metrics_service import metrics_service
 from app.services.scheduling_service import scheduling_service
+from app.services.keyword_service import keyword_service
+from app.models import Keyword, KeywordUploadBatch, DiscountCampaign, CampaignStatus
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,7 +21,7 @@ async def get_dashboard_overview(
     seller_id: str = Depends(get_current_seller),
     session: Session = Depends(get_session)
 ):
-    """Get dashboard overview with aggregated metrics"""
+    """Get comprehensive dashboard overview with campaigns, keywords, and metrics"""
     try:
         # Get aggregated metrics
         aggregated_metrics = metrics_service.get_aggregated_metrics(
@@ -28,17 +30,26 @@ async def get_dashboard_overview(
             days=days
         )
         
-        # Get recent campaign activity
-        from sqlmodel import select
-        from app.models import DiscountCampaign, CampaignStatus
-        
+        # Get campaign statistics
         campaigns_statement = select(DiscountCampaign).where(
             DiscountCampaign.seller_id == seller_id
+        )
+        all_campaigns = session.exec(campaigns_statement).all()
+        
+        campaign_stats = {
+            "total_campaigns": len(all_campaigns),
+            "active_campaigns": len([c for c in all_campaigns if c.status == CampaignStatus.ACTIVE]),
+            "scheduled_campaigns": len([c for c in all_campaigns if c.status == CampaignStatus.SCHEDULED]),
+            "completed_campaigns": len([c for c in all_campaigns if c.status == CampaignStatus.EXPIRED])
+        }
+        
+        # Get recent campaign activity (last 5)
+        recent_campaigns_statement = select(DiscountCampaign).where(
+            DiscountCampaign.seller_id == seller_id
         ).order_by(DiscountCampaign.updated_at.desc()).limit(5)
+        recent_campaigns = session.exec(recent_campaigns_statement).all()
         
-        recent_campaigns = session.exec(campaigns_statement).all()
-        
-        # Get active campaigns with recent metrics
+        # Get active campaigns with performance data
         active_campaigns_statement = select(DiscountCampaign).where(
             DiscountCampaign.seller_id == seller_id,
             DiscountCampaign.status == CampaignStatus.ACTIVE
@@ -67,6 +78,47 @@ async def get_dashboard_overview(
                 } if latest_metric else None
             })
         
+        # Get keyword analytics
+        keywords_statement = select(Keyword).where(
+            Keyword.seller_id == seller_id,
+            Keyword.is_active == True
+        )
+        keywords = session.exec(keywords_statement).all()
+        
+        keyword_stats = {
+            "total_keywords": len(keywords),
+            "high_volume_keywords": len([k for k in keywords if k.search_volume > 1000]),
+            "low_competition_keywords": len([k for k in keywords if k.competition == "Low"]),
+            "avg_search_volume": sum(k.search_volume for k in keywords) / len(keywords) if keywords else 0,
+            "top_keywords": [
+                {
+                    "keyword": k.keyword,
+                    "search_volume": k.search_volume,
+                    "competition": k.competition,
+                    "relevance_score": k.relevance_score
+                }
+                for k in sorted(keywords, key=lambda x: x.search_volume, reverse=True)[:5]
+            ]
+        }
+        
+        # Get keyword upload history
+        upload_batches_statement = select(KeywordUploadBatch).where(
+            KeywordUploadBatch.seller_id == seller_id
+        ).order_by(KeywordUploadBatch.uploaded_at.desc()).limit(3)
+        recent_uploads = session.exec(upload_batches_statement).all()
+        
+        upload_history = [
+            {
+                "batch_id": batch.id,
+                "filename": batch.filename,
+                "total_keywords": batch.total_keywords,
+                "processed_keywords": batch.processed_keywords,
+                "status": batch.status,
+                "uploaded_at": batch.uploaded_at
+            }
+            for batch in recent_uploads
+        ]
+        
         # Get upcoming schedules
         from app.models import CampaignSchedule, ScheduleStatus
         
@@ -75,6 +127,106 @@ async def get_dashboard_overview(
         ).join(DiscountCampaign).where(
             DiscountCampaign.seller_id == seller_id
         ).limit(10)
+        
+        upcoming_schedules = session.exec(upcoming_schedules_statement).all()
+        
+        schedules_data = [
+            {
+                "schedule_id": schedule.id,
+                "campaign_id": schedule.campaign_id,
+                "campaign_name": schedule.campaign.campaign_name if schedule.campaign else "Unknown",
+                "day_of_week": schedule.day_of_week,
+                "start_time": schedule.start_time.strftime("%H:%M"),
+                "action": schedule.action,
+                "next_execution": schedule.next_execution
+            }
+            for schedule in upcoming_schedules
+        ]
+        
+        # Generate alerts based on performance and keyword data
+        alerts = []
+        
+        # Campaign performance alerts
+        if any(c["conversion_rate"] < 1.0 for c in active_campaigns_data):
+            alerts.append({
+                "type": "warning",
+                "category": "performance",
+                "message": "Some active campaigns have low conversion rates (<1%)",
+                "action_required": True
+            })
+        
+        # Keyword alerts
+        if not keywords:
+            alerts.append({
+                "type": "info",
+                "category": "keywords",
+                "message": "No keywords uploaded yet. Upload Google Keyword Planner data to enhance suggestions.",
+                "action_required": True
+            })
+        elif len([k for k in keywords if k.search_volume > 1000]) < 5:
+            alerts.append({
+                "type": "info",
+                "category": "keywords",
+                "message": "Consider uploading more high-volume keywords for better campaign optimization.",
+                "action_required": False
+            })
+        
+        # Scheduling alerts
+        if len(upcoming_schedules) == 0 and len(active_campaigns) > 0:
+            alerts.append({
+                "type": "info",
+                "category": "scheduling",
+                "message": "Active campaigns without scheduled optimization. Consider setting up automated schedules.",
+                "action_required": False
+            })
+        
+        # Performance summary with keyword enhancement
+        performance_summary = {
+            "period_days": days,
+            "total_campaigns": len(all_campaigns),
+            "keyword_enhanced_campaigns": len([c for c in all_campaigns if any(k.keyword.lower() in c.campaign_name.lower() for k in keywords)]),
+            "metrics": aggregated_metrics,
+            "keyword_optimization_potential": {
+                "available_keywords": len(keywords),
+                "campaigns_without_keywords": len(all_campaigns) - len([c for c in all_campaigns if any(k.keyword.lower() in c.campaign_name.lower() for k in keywords)]),
+                "optimization_score": min(100, (len(keywords) / 50) * 100) if keywords else 0  # Score out of 50 ideal keywords
+            }
+        }
+        
+        return {
+            "overview": {
+                "generated_at": datetime.utcnow(),
+                "period_days": days,
+                "seller_id": seller_id
+            },
+            "campaign_stats": campaign_stats,
+            "keyword_stats": keyword_stats,
+            "performance_summary": performance_summary,
+            "active_campaigns": active_campaigns_data,
+            "recent_campaigns": [
+                {
+                    "id": c.id,
+                    "campaign_name": c.campaign_name,
+                    "status": c.status,
+                    "discount_percentage": c.discount_percentage,
+                    "updated_at": c.updated_at
+                }
+                for c in recent_campaigns
+            ],
+            "upload_history": upload_history,
+            "upcoming_schedules": schedules_data,
+            "alerts": alerts,
+            "insights": {
+                "keyword_integration": len(keywords) > 0,
+                "active_optimization": len(active_campaigns) > 0,
+                "automation_configured": len(upcoming_schedules) > 0,
+                "performance_health": "good" if all(c["conversion_rate"] >= 1.0 for c in active_campaigns_data) else "needs_attention"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting dashboard overview: {e}")
+        raise HTTPException(status_code=500, detail="Error loading dashboard data")
         
         upcoming_schedules = session.exec(upcoming_schedules_statement).all()
         
