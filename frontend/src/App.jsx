@@ -5,12 +5,15 @@ import ApiConfig from './pages/ApiConfig'
 import OAuthManager from './pages/OAuthManager'
 import ApiTester from './pages/ApiTester'
 import SEOIntelligenceDashboard from './pages/SEOIntelligenceDashboard'
+import CampaignAutomationPage from './pages/CampaignAutomationPage'
 
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard')
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'campaign-automation':
+        return <CampaignAutomationPage />
       case 'seo-intelligence':
         return <SEOIntelligenceDashboard />
       case 'dashboard':

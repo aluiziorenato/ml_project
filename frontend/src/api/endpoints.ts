@@ -48,6 +48,26 @@ export const endpoints = {
     health: '/health',
     status: '/api/system/status',
     metrics: '/api/system/metrics'
+  },
+
+  // Campaign Automation endpoints
+  campaignAutomation: {
+    campaigns: '/api/campaigns',
+    getCampaign: (id: string) => `/api/campaigns/${id}`,
+    createRule: (campaignId: string) => `/api/campaigns/${campaignId}/rules`,
+    createSchedule: (campaignId: string) => `/api/campaigns/${campaignId}/schedule`,
+    metrics: (campaignId: string) => `/api/monitoring/metrics/${campaignId}`,
+    competitors: '/api/monitoring/competitors',
+    updateMetrics: '/api/monitoring/update-metrics',
+    predictAcos: (campaignId: string) => `/api/predictions/acos/${campaignId}`,
+    pendingApprovals: '/api/approvals/pending',
+    approveAction: (actionId: string) => `/api/approvals/${actionId}/approve`,
+    rejectAction: (actionId: string) => `/api/approvals/${actionId}/reject`,
+    dashboardOverview: '/api/dashboard/overview',
+    campaignCharts: (campaignId: string) => `/api/dashboard/charts/${campaignId}`,
+    calendar: (campaignId: string) => `/api/calendar/${campaignId}`,
+    calendarEvents: (campaignId: string) => `/api/calendar/${campaignId}/events`,
+    health: '/health'
   }
 } as const;
 
