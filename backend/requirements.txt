@@ -15,5 +15,8 @@ passlib==1.7.4
 python-multipart==0.0.20
 requests==2.32.3
 pytest-regressions==2.8.2     # Snapshot testing for regression tests
+# Error Monitoring
+sentry-sdk[fastapi]==2.18.0  # Error monitoring and performance tracking
+
 # Compatibilidade
 six==1.17.0             # Compatibilidade entre Python 2 e 3 (pode ser removido se usar apenas Python 3.6+)

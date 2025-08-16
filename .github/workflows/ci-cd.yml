@@ -17,6 +17,10 @@ env:
   ML_CLIENT_SECRET: ${{ secrets.ML_CLIENT_SECRET || 'test_client_secret' }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  # Sentry Configuration  
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  SENTRY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+  SENTRY_TRACES_SAMPLE_RATE: "0.1"
 
 jobs:
   # ==========================================
@@ -376,6 +380,73 @@ jobs:
         file: ./backend/coverage.xml
         flags: backend
         name: backend-coverage
+
+  test-backend-integration:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: senha
+          POSTGRES_USER: usuario
+          POSTGRES_DB: nome_do_banco
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-backend-integration-${{ hashFiles('backend/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-backend-integration-
+          ${{ runner.os }}-pip-backend-
+          ${{ runner.os }}-pip-
+
+    - name: Upgrade pip
+      run: |
+        python -m pip install --upgrade pip
+
+    - name: Install backend dependencies with Sentry
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
+
+    - name: Run backend integration tests with coverage
+      env:
+        DATABASE_URL: ${{ env.DATABASE_URL }}
+        ML_CLIENT_ID: ${{ env.ML_CLIENT_ID }}
+        ML_CLIENT_SECRET: ${{ env.ML_CLIENT_SECRET }}
+        SECRET_KEY: ${{ env.SECRET_KEY }}
+        SENTRY_DSN: ${{ env.SENTRY_DSN }}
+        SENTRY_ENVIRONMENT: ${{ env.SENTRY_ENVIRONMENT }}
+        SENTRY_TRACES_SAMPLE_RATE: ${{ env.SENTRY_TRACES_SAMPLE_RATE }}
+      run: |
+        cd backend
+        pytest tests/test_backend_integration.py -v --cov=app --cov-report=xml --cov-report=term-missing
+
+    - name: Upload backend integration coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        flags: backend-integration
+        name: backend-integration-coverage
 
   test-simulator-service:
     runs-on: ubuntu-latest
@@ -906,10 +977,10 @@ jobs:
         cd frontend
         npm run build
 
-    - name: Run frontend tests with coverage
+    - name: Run frontend unit tests with coverage
       run: |
         cd frontend
-        npm run test:coverage || echo "Frontend tests completed"
+        npm run test:coverage || echo "Frontend unit tests completed"
 
     - name: Upload frontend coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -917,6 +988,96 @@ jobs:
         file: ./frontend/coverage/lcov.info
         flags: frontend
         name: frontend-coverage
+
+  test-frontend-cypress:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: senha
+          POSTGRES_USER: usuario
+          POSTGRES_DB: nome_do_banco
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Set up Python for backend
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm ci
+        npx cypress install
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Start backend server
+      env:
+        DATABASE_URL: ${{ env.DATABASE_URL }}
+        ML_CLIENT_ID: ${{ env.ML_CLIENT_ID }}
+        ML_CLIENT_SECRET: ${{ env.ML_CLIENT_SECRET }}
+        SECRET_KEY: ${{ env.SECRET_KEY }}
+        SENTRY_DSN: ${{ env.SENTRY_DSN }}
+        SENTRY_ENVIRONMENT: ${{ env.SENTRY_ENVIRONMENT }}
+      run: |
+        cd backend
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        sleep 10
+        curl -f http://localhost:8000/health || exit 1
+      
+    - name: Start frontend server
+      run: |
+        cd frontend
+        npm run preview &
+        sleep 5
+        curl -f http://localhost:4173 || echo "Frontend server might not be ready"
+
+    - name: Run Cypress E2E tests
+      env:
+        CYPRESS_BASE_URL: http://localhost:4173
+        CYPRESS_BACKEND_URL: http://localhost:8000
+      run: |
+        cd frontend
+        npx cypress run --headless --browser chrome
+
+    - name: Upload Cypress screenshots and videos
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: cypress-screenshots-videos
+        path: |
+          frontend/cypress/screenshots
+          frontend/cypress/videos
+        retention-days: 7
 
   # ==========================================
   # SECURITY SCANNING
@@ -952,9 +1113,9 @@ jobs:
       lint-backend, lint-simulator-service, lint-learning-service, 
       lint-optimizer-ai, lint-discount-campaign-scheduler, lint-campaign-automation, 
       lint-tests, lint-modules,
-      test-backend, test-simulator-service, test-learning-service, 
+      test-backend, test-backend-integration, test-simulator-service, test-learning-service, 
       test-optimizer-ai, test-discount-campaign-scheduler, test-campaign-automation, 
-      test-modules, test-main-tests, test-frontend
+      test-modules, test-main-tests, test-frontend, test-frontend-cypress
     ]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
@@ -1157,9 +1318,9 @@ jobs:
 
   coverage-report:
     needs: [
-      test-backend, test-simulator-service, test-learning-service, 
+      test-backend, test-backend-integration, test-simulator-service, test-learning-service, 
       test-optimizer-ai, test-discount-campaign-scheduler, test-campaign-automation, 
-      test-modules, test-main-tests, test-frontend
+      test-modules, test-main-tests, test-frontend, test-frontend-cypress
     ]
     runs-on: ubuntu-latest
     
