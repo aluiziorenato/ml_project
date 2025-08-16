@@ -4,9 +4,10 @@ from typing import List, Dict, Optional
 from sqlmodel import Session, select
 import numpy as np
 from app.models import (
-    ItemSuggestion, DiscountCampaign, SuggestionResponse
+    ItemSuggestion, DiscountCampaign, SuggestionResponse, Keyword, KeywordSuggestionMatch
 )
 from app.services.ml_api_service import ml_api_service
+from app.services.microservice_integration import microservice_integration
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -24,8 +25,11 @@ class SuggestionsService:
             # Get seller items with engagement data
             items = await self._get_seller_items_with_engagement(seller_id, access_token)
             
-            # Calculate potential scores for each item
-            scored_items = await self._calculate_potential_scores(items, access_token)
+            # Get available keywords for this seller
+            keywords = self._get_seller_keywords(session, seller_id)
+            
+            # Calculate potential scores with keyword enhancement
+            scored_items = await self._calculate_potential_scores_with_keywords(items, keywords, access_token)
             
             # Select top suggestions
             top_suggestions = self._select_top_suggestions(scored_items, settings.max_suggestions)
@@ -39,6 +43,142 @@ class SuggestionsService:
         except Exception as e:
             logger.error(f"Error generating suggestions for seller {seller_id}: {e}")
             raise
+
+    def _get_seller_keywords(self, session: Session, seller_id: str) -> List[Dict]:
+        """Get active keywords for the seller"""
+        keywords_stmt = select(Keyword).where(
+            Keyword.seller_id == seller_id,
+            Keyword.is_active == True
+        ).order_by(Keyword.search_volume.desc())
+        
+        keywords = session.exec(keywords_stmt).all()
+        
+        return [
+            {
+                "keyword": k.keyword,
+                "search_volume": k.search_volume,
+                "competition": k.competition,
+                "relevance_score": k.relevance_score or 0.5,
+                "category_match": k.category_match
+            }
+            for k in keywords
+        ]
+
+    async def _calculate_potential_scores_with_keywords(self, items: List[Dict], keywords: List[Dict], access_token: str) -> List[Dict]:
+        """Calculate potential scores enhanced with keyword data"""
+        scored_items = []
+        
+        for item in items:
+            try:
+                # Get base score
+                score_data = self._calculate_item_score(item)
+                
+                # Add keyword enhancement
+                keyword_boost = self._calculate_keyword_boost(item, keywords)
+                
+                # Adjust score with keyword data
+                enhanced_score = score_data["potential_score"] * (1 + keyword_boost)
+                enhanced_score = min(1.0, enhanced_score)  # Cap at 1.0
+                
+                # Get copy optimization suggestions
+                copy_optimization = await self._get_copy_optimization(item, keywords)
+                
+                scored_item = {
+                    **item,
+                    "potential_score": enhanced_score,
+                    "engagement_trend": score_data["engagement_trend"],
+                    "score_factors": score_data["factors"],
+                    "keyword_boost": keyword_boost,
+                    "matched_keywords": self._get_matched_keywords(item, keywords),
+                    "copy_optimization": copy_optimization
+                }
+                
+                scored_items.append(scored_item)
+                
+            except Exception as e:
+                logger.warning(f"Error calculating enhanced score for item {item['id']}: {e}")
+                continue
+        
+        return scored_items
+
+    def _calculate_keyword_boost(self, item: Dict, keywords: List[Dict]) -> float:
+        """Calculate keyword-based boost for item score"""
+        if not keywords:
+            return 0.0
+        
+        title = item.get("title", "").lower()
+        title_words = set(title.split())
+        
+        total_boost = 0.0
+        matched_count = 0
+        
+        for keyword_data in keywords:
+            keyword = keyword_data["keyword"].lower()
+            keyword_words = set(keyword.split())
+            
+            # Calculate overlap
+            overlap = len(title_words.intersection(keyword_words))
+            if overlap > 0:
+                # Boost based on search volume and relevance
+                volume_factor = min(1.0, keyword_data["search_volume"] / 10000.0)
+                relevance_factor = keyword_data["relevance_score"]
+                
+                # Competition factor (lower competition = higher boost)
+                comp_factor = {"Low": 1.0, "Medium": 0.7, "High": 0.4}.get(
+                    keyword_data["competition"], 0.7
+                )
+                
+                keyword_boost = volume_factor * relevance_factor * comp_factor * 0.2
+                total_boost += keyword_boost
+                matched_count += 1
+        
+        # Average boost, capped at 0.3 (30% improvement)
+        average_boost = total_boost / max(matched_count, 1) if matched_count > 0 else 0.0
+        return min(0.3, average_boost)
+
+    def _get_matched_keywords(self, item: Dict, keywords: List[Dict]) -> List[str]:
+        """Get keywords that match the item"""
+        title = item.get("title", "").lower()
+        title_words = set(title.split())
+        
+        matched = []
+        for keyword_data in keywords:
+            keyword = keyword_data["keyword"].lower()
+            keyword_words = set(keyword.split())
+            
+            if len(title_words.intersection(keyword_words)) > 0:
+                matched.append(keyword_data["keyword"])
+        
+        return matched[:5]  # Limit to top 5 matches
+
+    async def _get_copy_optimization(self, item: Dict, keywords: List[Dict]) -> Optional[Dict]:
+        """Get copy optimization suggestions using microservice integration"""
+        try:
+            if not keywords:
+                return None
+                
+            # Get matched keywords for this item
+            matched_keywords = self._get_matched_keywords(item, keywords)
+            
+            if not matched_keywords:
+                return None
+            
+            # Call microservice for copy optimization
+            optimization_result = await microservice_integration.optimize_copy_with_keywords(
+                product_data={
+                    "item_id": item["id"],
+                    "title": item["title"],
+                    "category": item.get("category_id", ""),
+                    "price": item.get("price", 0)
+                },
+                keywords=matched_keywords[:3]  # Use top 3 keywords
+            )
+            
+            return optimization_result
+            
+        except Exception as e:
+            logger.warning(f"Failed to get copy optimization for item {item['id']}: {e}")
+            return None
     
     async def _get_seller_items_with_engagement(self, seller_id: str, access_token: str) -> List[Dict]:
         """Get seller items with recent engagement data"""
