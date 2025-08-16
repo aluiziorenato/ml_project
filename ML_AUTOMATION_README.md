@@ -1,6 +1,6 @@
 # 🚀 Mercado Livre ML Automation System
 
-Este projeto implementa três módulos independentes para automação de vendas no Mercado Livre, usando IA e Machine Learning.
+Este projeto implementa múltiplos módulos independentes para automação de vendas no Mercado Livre, usando IA e Machine Learning.
 
 ## 📦 Módulos Implementados
 
@@ -57,21 +57,43 @@ Otimiza textos de anúncios usando técnicas de IA para melhorar conversões.
 - `POST /api/optimize-copy` - Otimizar texto
 - `POST /api/ab-test` - Criar teste A/B
 
+### 4. 🤖 Automação de Campanhas (`campaign_automation_service`)
+**Porta: 8014**
+
+Sistema completo de automação de campanhas publicitárias com IA e análise de concorrentes.
+
+**Funcionalidades:**
+- Gestão completa de campanhas (CRUD + lifecycle)
+- Otimização automática com IA
+- Analytics e métricas em tempo real
+- Monitoramento de concorrentes
+- Testes A/B automatizados
+- Agendamento de tarefas
+- Integração com todos os serviços ML
+
+**Endpoints:**
+- `GET /api/campaigns` - Listar campanhas
+- `POST /api/campaigns` - Criar campanha
+- `POST /api/campaigns/{id}/optimize/copy` - Otimizar copy
+- `GET /api/campaigns/{id}/metrics` - Métricas
+- `POST /api/competitor/analyze` - Análise concorrentes
+- `POST /api/automation/schedule` - Agendar tarefas
+
 ## 🏗️ Arquitetura
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Simulator      │    │  Learning       │    │  Optimizer      │
-│  Service        │    │  Service        │    │  AI             │
-│  Port: 8001     │    │  Port: 8002     │    │  Port: 8003     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │  Kubernetes     │
-                    │  Cluster        │
-                    └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Simulator      │    │  Learning       │    │  Optimizer      │    │  Campaign       │
+│  Service        │    │  Service        │    │  AI             │    │  Automation     │
+│  Port: 8001     │    │  Port: 8002     │    │  Port: 8003     │    │  Port: 8014     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │                       │
+         └───────────────────────┼───────────────────────┼───────────────────────┘
+                                 │                       │
+                    ┌─────────────────┐      ┌─────────────────┐
+                    │  PostgreSQL     │      │  Redis Cache    │
+                    │  Database       │      │  & Task Queue   │
+                    └─────────────────┘      └─────────────────┘
 ```
 
 ## 🐳 Docker & Kubernetes
