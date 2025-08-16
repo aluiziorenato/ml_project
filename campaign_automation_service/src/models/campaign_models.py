@@ -100,12 +100,13 @@ class CampaignMetric(Base):
     cost = Column(Float, default=0.0)
     revenue = Column(Float, default=0.0)
     
-    # Calculated metrics
-    ctr = Column(Float, default=0.0)  # Click-through rate
-    cpc = Column(Float, default=0.0)  # Cost per click
-    cpa = Column(Float, default=0.0)  # Cost per acquisition
-    roas = Column(Float, default=0.0)  # Return on ad spend
-    roi = Column(Float, default=0.0)  # Return on investment
+    # Derived metrics
+    ctr = Column(Float, default=0.0)  # Click Through Rate
+    cpc = Column(Float, default=0.0)  # Cost Per Click
+    cpa = Column(Float, default=0.0)  # Cost Per Acquisition
+    roas = Column(Float, default=0.0)  # Return on Ad Spend
+    roi = Column(Float, default=0.0)  # Return on Investment
+    acos = Column(Float, default=0.0)  # Advertising Cost of Sales
     
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -222,6 +223,7 @@ class CampaignResponse(CampaignBase):
     cpc: Optional[float] = None
     roas: Optional[float] = None
     roi: Optional[float] = None
+    acos: Optional[float] = None
     
     class Config:
         from_attributes = True
@@ -240,6 +242,7 @@ class MetricsSummary(BaseModel):
     avg_cpa: float
     roas: float
     roi: float
+    acos: float
 
 
 class ABTestCreate(BaseModel):
