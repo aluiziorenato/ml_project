@@ -1,0 +1,77 @@
+Failed to store data: table optimizations has no column named updated_at
+Failed to store data: table optimizations has no column named updated_at
+Failed to store data: table optimizations has no column named updated_at
+=== Genetic Algorithm Campaign Optimization Demo ===
+
+1. Configuring Genetic Algorithm
+   ✓ Configured with population size: 20
+   ✓ Max generations: 15
+   ✓ Crossover rate: 0.85
+
+2. Setting Optimization Constraints
+   ✓ Set constraints for 3 parameters
+
+3. Sample Campaign Data
+   Campaign 1: Premium Electronics
+      ROI: 3.2x
+      Conversion Rate: 4.5%
+      Current Budget: $800
+   Campaign 2: Fashion & Accessories
+      ROI: 2.1x
+      Conversion Rate: 2.8%
+      Current Budget: $600
+   Campaign 3: Home & Garden
+      ROI: 2.8x
+      Conversion Rate: 3.5%
+      Current Budget: $500
+
+4. Comparing Optimization Methods
+   Total Budget: $2500
+   Objective: Maximize ROI
+
+   GREEDY ALGORITHM RESULTS:
+      Expected Improvement: $435.00
+      Confidence Score: 85.0%
+      Iterations: 1
+      Budget Allocation:
+         Premium Electronics: $987.65
+         Fashion & Accessories: $648.15
+         Home & Garden: $864.2
+
+   GENETIC ALGORITHM RESULTS:
+      Expected Improvement: $725.00
+      Confidence Score: 95.0%
+      Iterations: 15
+      Best Fitness: 6380.13
+      Budget Allocation:
+         Premium Electronics: $1413.05
+         Fashion & Accessories: $311.04
+         Home & Garden: $775.9
+
+   COMPARISON SUMMARY:
+      Improvement Difference: $290.00
+      Confidence Difference: 10.0%
+      Genetic Algorithm Better: True
+
+5. Campaign Parameter Optimization
+   Current Parameters:
+      max_cpc: 1.2
+      location_radius: 35.0
+      daily_budget: 800.0
+
+   Optimized Parameters:
+      max_cpc: 1.469
+      location_radius: 29.772
+      daily_budget: 4579.876
+   Expected Improvement: $605.00
+   Confidence Score: 85.0%
+
+6. Genetic Algorithm Status
+   Configured: True
+   Population Size: 20
+   Current Generation: 14
+   Best Fitness: 2401.57
+   Parameter Bounds: 3 parameters
+   Constraints: 4 constraints
+
+=== Demo Completed Successfully! ===
