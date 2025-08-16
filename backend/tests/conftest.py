@@ -13,25 +13,45 @@ from app.main import app
 from app.db import get_session
 from app.models import User
 from app.core.security import get_password_hash, create_access_token
+from app.settings import Settings
 
 
-# Create in-memory SQLite database for testing
-@pytest.fixture(name="session")
-def session_fixture():
+@pytest.fixture(scope="session")
+def settings():
+    return Settings(
+        database_url="sqlite:///:memory:",
+        testing=True,
+        secret_key="test_secret_key",
+        ml_client_id="test_client_id",
+        ml_client_secret="test_client_secret"
+    )
+
+
+@pytest.fixture(scope="session")
+def engine(settings):
     engine = create_engine(
-        "sqlite:///:memory:",
+        settings.database_url,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
+    return engine
+
+
+# Create in-memory SQLite database for testing
+@pytest.fixture(name="session")
+def session_fixture(engine):
     with Session(engine) as session:
         yield session
 
 
 @pytest.fixture(name="client")
-def client_fixture(session: Session):
+def client_fixture(session: Session, settings):
     def get_session_override():
         return session
+
+    def get_settings_override():
+        return settings
 
     app.dependency_overrides[get_session] = get_session_override
     client = TestClient(app)
@@ -40,9 +60,12 @@ def client_fixture(session: Session):
 
 
 @pytest.fixture(name="async_client")
-async def async_client_fixture(session: Session) -> AsyncGenerator[httpx.AsyncClient, None]:
+async def async_client_fixture(session: Session, settings) -> AsyncGenerator[httpx.AsyncClient, None]:
     def get_session_override():
         return session
+
+    def get_settings_override():
+        return settings
 
     app.dependency_overrides[get_session] = get_session_override
     

@@ -1,0 +1,322 @@
+name: Comprehensive Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+    
+    - name: Install Python dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
+    
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U postgres; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+    
+    - name: Run linting
+      working-directory: ./backend
+      run: |
+        # Install linting tools if not in requirements
+        pip install flake8 black isort mypy
+        
+        # Run code formatting checks
+        black --check app/ tests/
+        isort --check-only app/ tests/
+        
+        # Run linting
+        flake8 app/ tests/ --max-line-length=88 --extend-ignore=E203,W503
+        
+        # Run type checking
+        mypy app/ --ignore-missing-imports
+    
+    - name: Run unit tests
+      working-directory: ./backend
+      env:
+        DATABASE_URL: sqlite:///:memory:
+        TESTING: true
+        SECRET_KEY: test_secret_key_for_ci
+        MERCADO_LIVRE_CLIENT_ID: test_client_id
+        MERCADO_LIVRE_CLIENT_SECRET: test_client_secret
+      run: |
+        pytest tests/unit/ -v --tb=short -m unit
+    
+    - name: Run integration tests
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        TESTING: true
+        SECRET_KEY: test_secret_key_for_ci
+        MERCADO_LIVRE_CLIENT_ID: test_client_id
+        MERCADO_LIVRE_CLIENT_SECRET: test_client_secret
+      run: |
+        pytest tests/integration/ -v --tb=short -m integration
+    
+    - name: Run E2E tests
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        TESTING: true
+        SECRET_KEY: test_secret_key_for_ci
+        MERCADO_LIVRE_CLIENT_ID: test_client_id
+        MERCADO_LIVRE_CLIENT_SECRET: test_client_secret
+      run: |
+        pytest tests/e2e/ -v --tb=short -m e2e
+    
+    - name: Run regression tests
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        TESTING: true
+        SECRET_KEY: test_secret_key_for_ci
+        MERCADO_LIVRE_CLIENT_ID: test_client_id
+        MERCADO_LIVRE_CLIENT_SECRET: test_client_secret
+      run: |
+        pytest tests/regression/ -v --tb=short -m regression
+    
+    - name: Run complete test suite with coverage
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        TESTING: true
+        SECRET_KEY: test_secret_key_for_ci
+        MERCADO_LIVRE_CLIENT_ID: test_client_id
+        MERCADO_LIVRE_CLIENT_SECRET: test_client_secret
+      run: |
+        pytest --cov=app --cov-report=xml --cov-report=html --cov-report=term-missing --cov-fail-under=100
+    
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        directory: ./backend
+        fail_ci_if_error: true
+        verbose: true
+    
+    - name: Upload coverage HTML report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: coverage-report-${{ matrix.python-version }}
+        path: ./backend/htmlcov/
+    
+    - name: Run performance benchmarks
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        TESTING: true
+        SECRET_KEY: test_secret_key_for_ci
+        MERCADO_LIVRE_CLIENT_ID: test_client_id
+        MERCADO_LIVRE_CLIENT_SECRET: test_client_secret
+      run: |
+        pytest --benchmark-only --benchmark-json=benchmark_results.json
+    
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: benchmark-results-${{ matrix.python-version }}
+        path: ./backend/benchmark_results.json
+    
+    - name: Comment PR with coverage
+      if: github.event_name == 'pull_request' && matrix.python-version == '3.9'
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        recreate: true
+        message: |
+          ## Test Coverage Report
+          
+          Coverage report has been generated and uploaded to Codecov.
+          
+          **Coverage Summary:**
+          - Unit Tests: ✅ Passed
+          - Integration Tests: ✅ Passed  
+          - E2E Tests: ✅ Passed
+          - Regression Tests: ✅ Passed
+          
+          **Performance Benchmarks:**
+          Benchmark results have been uploaded as artifacts.
+          
+          View detailed coverage report in the artifacts section.
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install security scanning tools
+      working-directory: ./backend
+      run: |
+        pip install safety bandit semgrep
+    
+    - name: Run safety check for dependencies
+      working-directory: ./backend
+      run: |
+        safety check -r requirements.txt
+        safety check -r requirements-test.txt
+    
+    - name: Run bandit security linter
+      working-directory: ./backend
+      run: |
+        bandit -r app/ -f json -o bandit_report.json || true
+        bandit -r app/ -f txt
+    
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-scan-results
+        path: ./backend/bandit_report.json
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build Docker image
+      working-directory: ./backend
+      run: |
+        docker build -t ml-project-backend:latest .
+    
+    - name: Test Docker image
+      run: |
+        docker run --rm ml-project-backend:latest python -c "import app; print('Docker build successful')"
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [test, security-scan, docker-build]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add actual deployment commands here
+        
+    - name: Run staging smoke tests
+      working-directory: ./backend
+      env:
+        STAGING_URL: ${{ secrets.STAGING_URL }}
+        STAGING_API_KEY: ${{ secrets.STAGING_API_KEY }}
+      run: |
+        pip install requests
+        python -c "
+        import requests
+        import os
+        
+        base_url = os.environ.get('STAGING_URL', 'http://localhost:8000')
+        
+        # Health check
+        response = requests.get(f'{base_url}/health')
+        assert response.status_code == 200
+        print('Staging health check passed')
+        "
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [test, security-scan, docker-build]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add actual deployment commands here
+        
+    - name: Run production smoke tests
+      working-directory: ./backend
+      env:
+        PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+        PRODUCTION_API_KEY: ${{ secrets.PRODUCTION_API_KEY }}
+      run: |
+        pip install requests
+        python -c "
+        import requests
+        import os
+        
+        base_url = os.environ.get('PRODUCTION_URL', 'http://localhost:8000')
+        
+        # Health check
+        response = requests.get(f'{base_url}/health')
+        assert response.status_code == 200
+        print('Production health check passed')
+        "
+    
+    - name: Notify deployment success
+      if: success()
+      run: |
+        echo "Production deployment completed successfully!"
+        # Add notification webhook or Slack notification here
+
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Cleanup test artifacts
+      run: |
+        echo "Cleaning up test artifacts and temporary resources..."
+        # Add cleanup commands here
