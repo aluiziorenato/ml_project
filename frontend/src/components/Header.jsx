@@ -22,6 +22,16 @@ export default function Header({ currentView, setCurrentView }) {
             📊 Dashboard
           </button>
           <button
+            onClick={() => setCurrentView('strategic-mode')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              currentView === 'strategic-mode'
+                ? 'bg-white text-indigo-600 font-medium'
+                : 'bg-indigo-500 hover:bg-indigo-400 text-white'
+            }`}
+          >
+            🎯 Modo Estratégico
+          </button>
+          <button
             onClick={() => setCurrentView('products')}
             className={`px-4 py-2 rounded-lg transition-colors ${
               currentView === 'products'

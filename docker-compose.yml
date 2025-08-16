@@ -400,6 +400,34 @@ services:
     networks:
       - ml_network
 
+  # Strategic Mode Service
+  strategic_mode_service:
+    build:
+      context: ./strategic_mode_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/16
+      ACOS_SERVICE_URL: http://acos_service:8016
+      CAMPAIGN_SERVICE_URL: http://campaign_automation_service:8014
+      DISCOUNT_SERVICE_URL: http://discount_campaign_scheduler:8015
+      AI_PREDICTIVE_URL: http://ai_predictive:8005
+      ROI_PREDICTION_URL: http://roi_prediction:8013
+      SECRET_KEY: strategic-mode-secret-key-change-in-production
+      CELERY_BROKER_URL: redis://redis:6379/16
+      CELERY_RESULT_BACKEND: redis://redis:6379/16
+    ports:
+      - "8017:8017"
+    depends_on:
+      - db
+      - redis
+      - acos_service
+      - campaign_automation_service
+      - discount_campaign_scheduler
+    networks:
+      - ml_network
+
   # Celery Workers for async processing
   celery_worker:
     build:
