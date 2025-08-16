@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # Database settings
-    database_url: str = os.getenv("DATABASE_URL", "postgresql://usuario:senha@localhost:5432/nome_do_banco")
+    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./discount_campaigns.db")
     
     # Redis settings
     redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/15")
