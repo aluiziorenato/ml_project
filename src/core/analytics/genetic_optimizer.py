@@ -93,6 +93,8 @@ class GeneticOptimizer:
             config: Configuration parameters for the genetic algorithm
         """
         self.config = config or GeneticConfig()
+        self._validate_config()
+        
         self.population = []
         self.best_chromosome = None
         self.generation = 0
@@ -104,15 +106,94 @@ class GeneticOptimizer:
         random.seed(42)
         np.random.seed(42)
     
+    def _validate_config(self):
+        """Validate and correct genetic algorithm configuration."""
+        # Ensure positive values
+        self.config.population_size = max(2, self.config.population_size)
+        self.config.max_generations = max(1, self.config.max_generations)
+        self.config.tournament_size = max(2, min(self.config.tournament_size, self.config.population_size))
+        self.config.max_stagnant_generations = max(1, self.config.max_stagnant_generations)
+        
+        # Ensure rates are between 0 and 1
+        self.config.crossover_rate = max(0.0, min(1.0, self.config.crossover_rate))
+        self.config.mutation_rate = max(0.0, min(1.0, self.config.mutation_rate))
+        self.config.elitism_rate = max(0.0, min(1.0, self.config.elitism_rate))
+        
+        # Ensure convergence threshold is positive
+        self.config.convergence_threshold = max(1e-10, self.config.convergence_threshold)
+        
+        logger.info(f"Genetic algorithm configured: pop_size={self.config.population_size}, "
+                   f"max_gen={self.config.max_generations}, crossover={self.config.crossover_rate}, "
+                   f"mutation={self.config.mutation_rate}")
+    
+    def _validate_campaigns(self, campaigns: List[Dict[str, Any]]) -> bool:
+        """
+        Validate campaign data for optimization.
+        
+        Args:
+            campaigns: List of campaign configurations
+            
+        Returns:
+            True if campaigns are valid
+            
+        Raises:
+            ValueError: If campaigns are invalid
+        """
+        if not campaigns:
+            raise ValueError("Campaigns list cannot be empty")
+        
+        if len(campaigns) > 100:
+            raise ValueError("Too many campaigns (max 100 supported)")
+        
+        for i, campaign in enumerate(campaigns):
+            if not isinstance(campaign, dict):
+                raise ValueError(f"Campaign {i} must be a dictionary")
+            
+            # Check for required historical data (provide defaults if missing)
+            campaign.setdefault("historical_roi", 2.0)
+            campaign.setdefault("historical_conversion_rate", 0.02)
+            campaign.setdefault("historical_ctr", 0.01)
+            campaign.setdefault("daily_budget", 1000.0)
+            campaign.setdefault("optimal_cpc", 1.5)
+            campaign.setdefault("optimal_radius", 30.0)
+            
+            # Validate numerical values
+            if campaign["historical_roi"] <= 0:
+                logger.warning(f"Campaign {i} has invalid ROI, setting to default")
+                campaign["historical_roi"] = 2.0
+            
+            if not 0 <= campaign["historical_conversion_rate"] <= 1:
+                logger.warning(f"Campaign {i} has invalid conversion rate, setting to default")
+                campaign["historical_conversion_rate"] = 0.02
+        
+        return True
+    
     def set_parameter_bounds(self, bounds: Dict[str, Tuple[float, float]]):
         """
         Set bounds for optimization parameters.
         
         Args:
             bounds: Dictionary mapping parameter names to (min, max) bounds
+            
+        Raises:
+            ValueError: If bounds are invalid
         """
-        self.parameter_bounds = bounds
-        logger.info(f"Set parameter bounds for {len(bounds)} parameters")
+        validated_bounds = {}
+        
+        for param, (min_val, max_val) in bounds.items():
+            if not isinstance(param, str) or not param.strip():
+                raise ValueError(f"Parameter name must be a non-empty string")
+            
+            if not isinstance(min_val, (int, float)) or not isinstance(max_val, (int, float)):
+                raise ValueError(f"Bounds for {param} must be numeric")
+            
+            if min_val >= max_val:
+                raise ValueError(f"Min bound ({min_val}) must be less than max bound ({max_val}) for parameter {param}")
+            
+            validated_bounds[param] = (float(min_val), float(max_val))
+        
+        self.parameter_bounds = validated_bounds
+        logger.info(f"Set parameter bounds for {len(validated_bounds)} parameters")
     
     def set_constraints(self, constraints: Dict[str, Dict[str, float]]):
         """
@@ -120,14 +201,31 @@ class GeneticOptimizer:
         
         Args:
             constraints: Dict with parameter names and their min/max bounds
+            
+        Raises:
+            ValueError: If constraints are invalid
         """
+        if not isinstance(constraints, dict):
+            raise ValueError("Constraints must be a dictionary")
+        
         self.constraints = constraints
         # Convert constraints to parameter bounds format
         bounds = {}
         for param, constraint in constraints.items():
+            if not isinstance(constraint, dict):
+                raise ValueError(f"Constraint for {param} must be a dictionary")
+            
             if 'min' in constraint and 'max' in constraint:
-                bounds[param] = (constraint['min'], constraint['max'])
-        self.set_parameter_bounds(bounds)
+                min_val = constraint['min']
+                max_val = constraint['max']
+                
+                if min_val >= max_val:
+                    raise ValueError(f"Min constraint ({min_val}) must be less than max constraint ({max_val}) for {param}")
+                
+                bounds[param] = (min_val, max_val)
+        
+        if bounds:
+            self.set_parameter_bounds(bounds)
     
     def initialize_population(self, parameter_template: Dict[str, Any]) -> List[Chromosome]:
         """
@@ -408,18 +506,35 @@ class GeneticOptimizer:
             
         Returns:
             OptimizationResult with optimized budget allocation
+            
+        Raises:
+            ValueError: If parameters are invalid
         """
         try:
-            logger.info(f"Starting genetic optimization for {len(campaigns)} campaigns")
+            # Validate inputs
+            if not isinstance(total_budget, (int, float)) or total_budget <= 0:
+                raise ValueError("Total budget must be a positive number")
+            
+            if objective not in ["maximize_roi", "maximize_conversions", "maximize_clicks", "combined"]:
+                logger.warning(f"Unknown objective '{objective}', using 'maximize_roi'")
+                objective = "maximize_roi"
+            
+            self._validate_campaigns(campaigns)
+            
+            logger.info(f"Starting genetic optimization for {len(campaigns)} campaigns with budget ${total_budget}")
             
             # Set up parameter template and bounds
             parameter_template = {}
             bounds = {}
             
+            min_campaign_budget = max(10.0, total_budget * 0.01)  # At least 1% of total budget
+            max_campaign_budget = total_budget * 0.8  # Max 80% of total budget
+            
             for i, campaign in enumerate(campaigns):
                 param_name = f"campaign_{i}_budget"
-                parameter_template[param_name] = campaign.get("daily_budget", total_budget / len(campaigns))
-                bounds[param_name] = (10.0, total_budget * 0.8)  # Min 10, max 80% of total budget
+                default_budget = campaign.get("daily_budget", total_budget / len(campaigns))
+                parameter_template[param_name] = max(min_campaign_budget, min(max_campaign_budget, default_budget))
+                bounds[param_name] = (min_campaign_budget, max_campaign_budget)
             
             # Add constraint for total budget
             self.constraints["total_budget_limit"] = {"max": total_budget}
@@ -427,6 +542,9 @@ class GeneticOptimizer:
             
             # Initialize population
             self.population = self.initialize_population(parameter_template)
+            if not self.population:
+                raise RuntimeError("Failed to initialize population")
+            
             self.generation = 0
             self.fitness_history = []
             best_fitness_history = []
@@ -437,73 +555,99 @@ class GeneticOptimizer:
                 self.evaluate_fitness(chromosome, campaigns, objective)
             
             self.best_chromosome = max(self.population, key=lambda x: x.fitness)
+            if self.best_chromosome.fitness <= 0:
+                logger.warning("Initial population has very low fitness")
+            
             logger.info(f"Initial best fitness: {self.best_chromosome.fitness:.4f}")
             
             # Main genetic algorithm loop
             for generation in range(self.config.max_generations):
                 self.generation = generation
                 
-                # Selection and reproduction
-                new_population = []
-                
-                # Keep elite
-                elite = self.get_elite(self.population)
-                new_population.extend(elite)
-                
-                # Generate offspring
-                while len(new_population) < self.config.population_size:
-                    parent1 = self.tournament_selection(self.population)
-                    parent2 = self.tournament_selection(self.population)
+                try:
+                    # Selection and reproduction
+                    new_population = []
                     
-                    # Choose crossover type randomly
-                    if random.random() < 0.5:
-                        offspring1, offspring2 = self.single_point_crossover(parent1, parent2)
+                    # Keep elite
+                    elite = self.get_elite(self.population)
+                    new_population.extend(elite)
+                    
+                    # Generate offspring
+                    attempts = 0
+                    while len(new_population) < self.config.population_size and attempts < self.config.population_size * 3:
+                        try:
+                            parent1 = self.tournament_selection(self.population)
+                            parent2 = self.tournament_selection(self.population)
+                            
+                            # Choose crossover type randomly
+                            if random.random() < 0.5:
+                                offspring1, offspring2 = self.single_point_crossover(parent1, parent2)
+                            else:
+                                offspring1, offspring2 = self.two_point_crossover(parent1, parent2)
+                            
+                            # Apply mutation
+                            offspring1 = self.mutate(offspring1)
+                            offspring2 = self.mutate(offspring2)
+                            
+                            new_population.extend([offspring1, offspring2])
+                            
+                        except Exception as e:
+                            logger.warning(f"Error in reproduction step: {str(e)}")
+                            attempts += 1
+                            
+                        attempts += 1
+                    
+                    # Trim population to exact size
+                    new_population = new_population[:self.config.population_size]
+                    
+                    if len(new_population) < self.config.population_size:
+                        logger.warning(f"Population size reduced to {len(new_population)}")
+                    
+                    # Evaluate new population
+                    for chromosome in new_population:
+                        if not chromosome.evaluated:
+                            self.evaluate_fitness(chromosome, campaigns, objective)
+                    
+                    self.population = new_population
+                    
+                    # Update best chromosome
+                    current_best = max(self.population, key=lambda x: x.fitness)
+                    
+                    if current_best.fitness > self.best_chromosome.fitness:
+                        self.best_chromosome = current_best.copy()
+                        stagnant_generations = 0
+                        logger.info(f"Generation {generation}: New best fitness {self.best_chromosome.fitness:.4f}")
                     else:
-                        offspring1, offspring2 = self.two_point_crossover(parent1, parent2)
+                        stagnant_generations += 1
                     
-                    # Apply mutation
-                    offspring1 = self.mutate(offspring1)
-                    offspring2 = self.mutate(offspring2)
+                    # Track fitness history
+                    avg_fitness = sum(c.fitness for c in self.population) / len(self.population)
+                    self.fitness_history.append(avg_fitness)
+                    best_fitness_history.append(self.best_chromosome.fitness)
                     
-                    new_population.extend([offspring1, offspring2])
-                
-                # Trim population to exact size
-                new_population = new_population[:self.config.population_size]
-                
-                # Evaluate new population
-                for chromosome in new_population:
-                    if not chromosome.evaluated:
-                        self.evaluate_fitness(chromosome, campaigns, objective)
-                
-                self.population = new_population
-                
-                # Update best chromosome
-                current_best = max(self.population, key=lambda x: x.fitness)
-                
-                if current_best.fitness > self.best_chromosome.fitness:
-                    self.best_chromosome = current_best.copy()
-                    stagnant_generations = 0
-                    logger.info(f"Generation {generation}: New best fitness {self.best_chromosome.fitness:.4f}")
-                else:
-                    stagnant_generations += 1
-                
-                # Track fitness history
-                avg_fitness = sum(c.fitness for c in self.population) / len(self.population)
-                self.fitness_history.append(avg_fitness)
-                best_fitness_history.append(self.best_chromosome.fitness)
-                
-                # Check convergence
-                if stagnant_generations >= self.config.max_stagnant_generations:
-                    logger.info(f"Converged after {generation + 1} generations (stagnation)")
-                    break
-                
-                if generation > 10:
-                    recent_improvement = best_fitness_history[-1] - best_fitness_history[-10]
-                    if recent_improvement < self.config.convergence_threshold:
-                        logger.info(f"Converged after {generation + 1} generations (threshold)")
+                    # Check convergence
+                    if stagnant_generations >= self.config.max_stagnant_generations:
+                        logger.info(f"Converged after {generation + 1} generations (stagnation)")
                         break
+                    
+                    if generation > 10:
+                        recent_improvement = best_fitness_history[-1] - best_fitness_history[-10]
+                        if recent_improvement < self.config.convergence_threshold:
+                            logger.info(f"Converged after {generation + 1} generations (threshold)")
+                            break
+                
+                except Exception as e:
+                    logger.error(f"Error in generation {generation}: {str(e)}")
+                    if generation == 0:
+                        # If first generation fails, raise the error
+                        raise
+                    # Otherwise, continue with current best
+                    break
             
             # Prepare results
+            if not self.best_chromosome:
+                raise RuntimeError("Optimization failed to find any valid solution")
+            
             optimized_parameters = {}
             total_allocated = 0
             
@@ -512,8 +656,8 @@ class GeneticOptimizer:
             for i in range(len(campaigns)):
                 param_name = f"campaign_{i}_budget"
                 allocation = self.best_chromosome.genes.get(param_name, 0)
-                raw_allocations.append(allocation)
-                total_allocated += allocation
+                raw_allocations.append(max(0, allocation))  # Ensure non-negative
+                total_allocated += raw_allocations[-1]
             
             # Scale allocations to meet total budget
             if total_allocated > 0:
@@ -521,7 +665,7 @@ class GeneticOptimizer:
                 for i in range(len(campaigns)):
                     param_name = f"campaign_{i}_budget"
                     scaled_allocation = raw_allocations[i] * scale_factor
-                    optimized_parameters[param_name] = round(scaled_allocation, 2)
+                    optimized_parameters[param_name] = round(max(0, scaled_allocation), 2)
             else:
                 # Equal allocation if optimization failed
                 equal_allocation = total_budget / len(campaigns)
@@ -531,12 +675,13 @@ class GeneticOptimizer:
             
             # Calculate expected improvement
             current_performance = sum(c.get("current_performance", 1000) for c in campaigns)
-            expected_improvement = current_performance * 0.25  # Genetic algorithm typically finds better solutions
+            improvement_factor = 1.25 if self.best_chromosome.fitness > 0 else 1.0
+            expected_improvement = current_performance * (improvement_factor - 1)
             
             return OptimizationResult(
                 optimized_parameters=optimized_parameters,
                 expected_improvement=expected_improvement,
-                confidence_score=0.9,
+                confidence_score=min(0.95, 0.7 + (self.best_chromosome.fitness / 10000)),  # Scale confidence based on fitness
                 optimization_method="genetic_algorithm",
                 iterations_used=self.generation + 1,
                 timestamp=datetime.now(),
@@ -547,7 +692,8 @@ class GeneticOptimizer:
                     "population_size": self.config.population_size,
                     "best_fitness": self.best_chromosome.fitness,
                     "final_generation": self.generation,
-                    "convergence_reason": "stagnation" if stagnant_generations >= self.config.max_stagnant_generations else "threshold"
+                    "convergence_reason": "stagnation" if stagnant_generations >= self.config.max_stagnant_generations else "threshold",
+                    "avg_final_fitness": sum(c.fitness for c in self.population) / len(self.population) if self.population else 0
                 }
             )
             
