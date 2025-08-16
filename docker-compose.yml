@@ -428,6 +428,47 @@ services:
     networks:
       - ml_network
 
+  # Gamification Service
+  gamification_service:
+    build:
+      context: ./gamification_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/17
+      SECRET_KEY: gamification-service-secret-key-change-in-production
+    ports:
+      - "8018:8018"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
+  # Alerts Service
+  alerts_service:
+    build:
+      context: ./alerts_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+      REDIS_URL: redis://redis:6379/18
+      SECRET_KEY: alerts-service-secret-key-change-in-production
+      SMTP_SERVER: ${SMTP_SERVER:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      FRONTEND_URL: http://frontend:80
+    ports:
+      - "8019:8019"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ml_network
+
   # Celery Workers for async processing
   celery_worker:
     build:
