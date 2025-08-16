@@ -1,19 +1,19 @@
 # Criptografia e segurança
 ecdsa==0.19.1           # Algoritmo de assinatura digital baseado em curvas elípticas
-httpx
+httpx==0.28.1
 rsa==4.9.1              # Implementação de RSA para criptografia e assinatura
 pyasn1==0.6.1           # ASN.1 para codificação/decodificação de estruturas de dados
 python-jose==3.5.0      # JWT e JWS com suporte a JOSE (JSON Object Signing and Encryption)
-fastapi
-uvicorn[standard]
-pydantic-settings
-psycopg2-binary
-SQLAlchemy
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic-settings==2.6.1
+psycopg2-binary==2.9.10
+SQLAlchemy==2.0.36
 sqlmodel>=0.0.22
-python-dotenv
-passlib
-python-multipart
-requests
-pytest-regressions     # Snapshot testing for regression tests
+python-dotenv==1.0.1
+passlib==1.7.4
+python-multipart==0.0.20
+requests==2.32.3
+pytest-regressions==2.8.2     # Snapshot testing for regression tests
 # Compatibilidade
 six==1.17.0             # Compatibilidade entre Python 2 e 3 (pode ser removido se usar apenas Python 3.6+)
