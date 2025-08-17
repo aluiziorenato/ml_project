@@ -62,7 +62,17 @@ LOKI_URL=http://localhost:3100
 
 # Prometheus Configuration  
 PROMETHEUS_PORT=8000
+
+# Monitoring Security (PRODUÇÃO)
+METRICS_API_KEY=your-secure-random-key-here
+ENABLE_METRICS_AUTH=true
 ```
+
+**⚠️ IMPORTANTE - SEGURANÇA EM PRODUÇÃO:**
+- Altere `METRICS_API_KEY` para uma chave segura e única
+- Mantenha `ENABLE_METRICS_AUTH=true` em produção
+- Configure firewall para restringir acesso às portas de monitoramento
+- Use HTTPS em produção com certificados SSL válidos
 
 ### 2. Configuração do Frontend
 
@@ -112,7 +122,57 @@ docker-compose ps
 - **Formato**: JSON detalhado
 - **Informações**: CPU, memória, disco, rede, processos
 
-## 🔧 Configuração do Grafana
+## 🔒 Configuração de Segurança
+
+### Autenticação de Métricas
+O endpoint `/api/metrics/prometheus` está protegido por autenticação Bearer token:
+
+```bash
+# Acessar métricas com autenticação
+curl -H "Authorization: Bearer your-metrics-key" http://localhost:8000/api/metrics/prometheus
+
+# Configurar Prometheus com autenticação
+# Edite monitoring/prometheus.yml:
+authorization:
+  type: Bearer
+  credentials: 'your-metrics-key'
+```
+
+### Configurações de Produção
+```env
+# .env para produção
+METRICS_API_KEY=generate-secure-random-key-256-bits
+ENABLE_METRICS_AUTH=true
+SENTRY_DSN=your-sentry-dsn
+LOKI_URL=https://loki.your-domain.com
+```
+
+### Rede e Firewall
+- Prometheus: Porta 9090 (somente rede interna)
+- Grafana: Porta 3001 (acesso restrito por IP)
+- Métricas API: Porta 8000/api/metrics/* (autenticação obrigatória)
+
+## 🚨 Alertas e Monitoramento
+
+### Alertas Configurados
+O sistema inclui alertas automáticos para:
+
+- **Sistema**: CPU > 85%, Memória > 90%, Disco > 85%
+- **API**: Taxa de erro > 5%, Tempo resposta > 2s
+- **Aplicação**: Serviços offline, Baixa precisão ML
+- **Segurança**: Tentativas de login falhadas
+- **Infraestrutura**: Conexões excessivas, DB offline
+
+### Configuração de Notificações
+Edite `monitoring/alert_rules.yml` para personalizar alertas ou adicione webhook/email:
+
+```yaml
+# Exemplo de webhook para Slack/Discord
+- alert: CriticalError
+  expr: rate(application_errors_total[5m]) > 1
+  annotations:
+    webhook: "https://hooks.slack.com/your-webhook"
+```
 
 ### 1. Acesso ao Grafana
 - **URL**: `http://localhost:3001`

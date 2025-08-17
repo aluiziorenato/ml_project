@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # Admin User
     admin_email: str = Field(default="admin@example.com", alias="ADMIN_EMAIL")
     admin_password: Optional[str] = Field(default=None, alias="ADMIN_PASSWORD")
+    
+    # Monitoring Configuration
+    metrics_api_key: str = Field(default="change-this-metrics-key-in-production", alias="METRICS_API_KEY")
+    enable_metrics_auth: bool = Field(default=True, alias="ENABLE_METRICS_AUTH")
 
     model_config = {
         "env_file": ".env",

@@ -2,12 +2,13 @@
 Metrics and monitoring endpoints
 """
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, HTTPException, Depends, Header
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from prometheus_client import CONTENT_TYPE_LATEST
 import time
 import psutil
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from ..monitoring.prometheus_metrics import (
     get_metrics,
@@ -17,13 +18,35 @@ from ..monitoring.prometheus_metrics import (
     set_model_accuracy
 )
 from ..monitoring.loki_config import system_logger, api_logger
+from ..settings import settings
 
 router = APIRouter(prefix="/api/metrics", tags=["metrics"])
+security = HTTPBearer(auto_error=False)
+
+def verify_metrics_auth(authorization: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    """Verify metrics endpoint authentication"""
+    if not settings.enable_metrics_auth:
+        return True
+    
+    if not authorization:
+        raise HTTPException(
+            status_code=401, 
+            detail="Authentication required for metrics endpoint"
+        )
+    
+    if authorization.credentials != settings.metrics_api_key:
+        raise HTTPException(
+            status_code=403, 
+            detail="Invalid authentication credentials"
+        )
+    
+    return True
 
 @router.get("/prometheus")
-async def prometheus_metrics():
+async def prometheus_metrics(auth: bool = Depends(verify_metrics_auth)):
     """
     Expose Prometheus metrics endpoint
+    Requires authentication in production environment
     """
     try:
         # Update system metrics before serving
