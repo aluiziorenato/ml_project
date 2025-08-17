@@ -89,11 +89,11 @@ Fluxo OAuth2 implementado:
 Exemplo de `.env.example`:
 
 ```env
-DATABASE_URL = postgresql://user:password@localhost:5432/dbname
-SECRET_KEY = your_secret_key
-ML_CLIENT_ID = your_client_id
-ML_CLIENT_SECRET = your_client_secret
-ML_REDIRECT_URI = http://localhost:8000/api/oauth/callback
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+SECRET_KEY=your_secret_key
+ML_CLIENT_ID=your_client_id
+ML_CLIENT_SECRET=your_client_secret
+ML_REDIRECT_URI=http://localhost:8000/api/oauth/callback
 ```
 
 ---
@@ -106,6 +106,27 @@ ML_REDIRECT_URI = http://localhost:8000/api/oauth/callback
 - Docker Compose com PostgreSQL e pgAdmin
 - Testes unitários
 - Documentação básica clara
+
+---
+
+## 🧪 Testes
+
+### Configuração para Testes Automatizados
+
+Todos os testes devem usar a string de conexão padronizada para garantir compatibilidade com Docker Compose:
+
+```bash
+# Variável de ambiente para testes
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+
+# Executar testes em ambiente Docker
+docker-compose exec backend pytest -v
+
+# Testes com coverage
+docker-compose exec backend pytest --cov=app --cov-report=html
+```
+
+**Importante**: O host 'db' é usado no contexto de containers Docker. Para desenvolvimento local, substitua 'db' por 'localhost' se necessário.
 
 ---
 

@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # Database settings
     database_url: str = os.getenv(
         "DATABASE_URL", 
-        "postgresql://usuario:senha@localhost:5432/nome_do_banco"
+        "postgresql+psycopg2://postgres:postgres@db:5432/ml_db"
     )
     
     # Redis settings

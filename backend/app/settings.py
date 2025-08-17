@@ -6,7 +6,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Database
-    database_url: str = Field(default="sqlite:///./test.db", alias="DATABASE_URL")
+    database_url: str = Field(default="postgresql+psycopg2://postgres:postgres@db:5432/ml_db", alias="DATABASE_URL")
     
     # Mercado Libre API
     ml_client_id: str = Field(default="", alias="ML_CLIENT_ID")

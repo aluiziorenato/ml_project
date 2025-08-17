@@ -8,7 +8,7 @@ from .models import Base
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://usuario:senha@localhost:5432/nome_do_banco"
+    "postgresql+psycopg2://postgres:postgres@db:5432/ml_db"
 )
 
 engine = create_engine(DATABASE_URL)

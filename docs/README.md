@@ -208,11 +208,11 @@ ML_CLIENT_ID=your-mercado-livre-client-id
 ML_CLIENT_SECRET=your-mercado-livre-client-secret
 
 # Database
-DATABASE_URL=postgresql://user:password@host:port/database
-REDIS_URL=redis://host:port
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+REDIS_URL=redis://db:6379
 
 # MLflow
-MLFLOW_TRACKING_URI=postgresql://user:password@host:port/mlflow_db
+MLFLOW_TRACKING_URI=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
 
 # Email (para alertas)
 SMTP_SERVER=smtp.gmail.com
@@ -233,7 +233,7 @@ SMTP_PASSWORD=your-app-password
 ```bash
 # Configurar MLflow com PostgreSQL
 mlflow server \
-  --backend-store-uri postgresql://user:password@host:port/mlflow_db \
+  --backend-store-uri postgresql+psycopg2://postgres:postgres@db:5432/ml_db \
   --default-artifact-root /path/to/artifacts \
   --host 0.0.0.0 \
   --port 5000

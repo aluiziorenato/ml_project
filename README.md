@@ -242,7 +242,9 @@ O backend utiliza OAuth2 para autenticação com Mercado Libre.
 
 ## 🧪 Testes
 
-Para rodar os testes do backend localmente (sem Docker):
+### Testes Locais (sem Docker)
+
+Para rodar os testes do backend localmente:
 
 ```bash
 cd backend
@@ -251,6 +253,24 @@ source .venv/bin/activate
 pip install -r requirements.txt
 pytest -q
 ```
+
+### Testes com Docker (Recomendado)
+
+Para testes automatizados usando a configuração padronizada com host 'db':
+
+```bash
+# Subir serviços de teste
+docker-compose up -d db
+
+# Executar testes no container
+docker-compose exec backend pytest -v
+
+# Ou executar testes com database real
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+cd backend && pytest
+```
+
+**Importante**: Todos os testes automatizados devem usar o host 'db' quando executados em ambiente Docker/container. A string de conexão padrão `postgresql+psycopg2://postgres:postgres@db:5432/ml_db` garante compatibilidade com Docker Compose e ambientes de CI/CD.
 
 ---
 
@@ -275,7 +295,7 @@ alembic upgrade head
 Exemplo de `.env.example`:
 
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
 SECRET_KEY=your_secret_key
 ML_CLIENT_ID=your_client_id
 ML_CLIENT_SECRET=your_client_secret
