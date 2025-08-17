@@ -38,15 +38,15 @@ Fluxo OAuth2 implementado:
 
 ---
 
-## 🧪 Testes
+## 🧪 Testes e Validação
 
-- Testes unitários com Pytest
-- Cobrem rotas, serviços e modelos
-- Comando:
-  ```bash
-  cd backend
-  pytest -q
-  ```
+- Testes unitários abrangentes com Pytest
+- Script de diagnóstico de conexão (`scripts/check_db.py`)
+- Testes de integração com banco de dados
+- Validação de ambiente e configurações
+- Cobertura de código automatizada
+
+Ver seção detalhada de testes abaixo para instruções completas.
 
 ---
 
@@ -111,20 +111,148 @@ ML_REDIRECT_URI=http://localhost:8000/api/oauth/callback
 
 ## 🧪 Testes
 
-### Configuração para Testes Automatizados
+### 🔍 Script de Diagnóstico de Conexão
+
+Use o script `scripts/check_db.py` para diagnosticar problemas de conexão com o banco:
+
+```bash
+# Teste básico de conexão
+cd backend
+python scripts/check_db.py
+
+# Teste com informações detalhadas
+python scripts/check_db.py --verbose
+
+# Teste completo com operações CRUD
+python scripts/check_db.py --test-crud
+
+# Para desenvolvimento local (substitua 'db' por 'localhost')
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/ml_db python scripts/check_db.py
+```
+
+### 🐳 Configuração para Testes Automatizados
 
 Todos os testes devem usar a string de conexão padronizada para garantir compatibilidade com Docker Compose:
 
 ```bash
-# Variável de ambiente para testes
-export DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+# Subir apenas o banco de dados
+docker-compose up -d db
 
 # Executar testes em ambiente Docker
 docker-compose exec backend pytest -v
 
-# Testes com coverage
-docker-compose exec backend pytest --cov=app --cov-report=html
+# Testes com coverage detalhado
+docker-compose exec backend pytest --cov=app --cov-report=html --cov-report=term-missing
+
+# Testes específicos de banco
+docker-compose exec backend pytest tests/test_db_coverage.py -v
 ```
+
+### 🖥️ Testes Locais (sem Docker)
+
+```bash
+cd backend
+
+# Configurar ambiente virtual
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
+
+# Instalar dependências
+pip install -r requirements.txt
+
+# Configurar DATABASE_URL para desenvolvimento local
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/ml_db
+
+# Executar testes
+pytest -v
+
+# Com coverage
+pytest --cov=app --cov-report=html
+```
+
+### 🔧 Testes Manuais com psql
+
+Valide a conexão diretamente com PostgreSQL:
+
+```bash
+# Via Docker Compose
+docker-compose exec db psql -U postgres -d ml_db
+
+# Desenvolvimento local
+psql -h localhost -U postgres -d ml_db
+
+# Comandos úteis:
+\l          # Listar bancos de dados
+\dt         # Listar tabelas
+\d users    # Descrever estrutura da tabela users
+SELECT COUNT(*) FROM users;  # Contar registros
+\q          # Sair do psql
+```
+
+### 🌍 Validação de Variáveis de Ambiente
+
+#### Configuração Docker (`.env`)
+```env
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+SECRET_KEY=sua-chave-secreta-forte
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=sua-senha-admin
+ML_CLIENT_ID=seu-client-id
+ML_CLIENT_SECRET=seu-client-secret
+```
+
+#### Configuração Local (`.env`)
+```env
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/ml_db
+SECRET_KEY=sua-chave-secreta-forte
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=sua-senha-admin
+```
+
+### 📋 Validação de Logs na Inicialização
+
+```bash
+# Ver logs do backend em Docker
+docker-compose logs backend
+
+# Logs em tempo real
+docker-compose logs -f backend
+
+# Filtrar logs de conexão
+docker-compose logs backend | grep -i "database\|connection\|startup"
+```
+
+**Logs de Sucesso Esperados:**
+```
+✅ Database connection established
+✅ Created default admin user: admin@example.com
+✅ Application startup complete
+```
+
+### ✅ Checklist de Validação Prática
+
+#### Conexão com Banco
+- [ ] PostgreSQL rodando (`docker-compose ps` ou `systemctl status postgresql`)
+- [ ] DATABASE_URL configurada corretamente
+- [ ] Host correto: `@db:5432` (Docker) ou `@localhost:5432` (local)
+- [ ] Script `check_db.py` executa sem erros
+
+#### Operações CRUD
+- [ ] Script `check_db.py --test-crud` passa
+- [ ] Tabelas são criadas/alteradas/removidas corretamente
+- [ ] INSERT, SELECT, UPDATE, DELETE funcionam
+
+#### Ambiente e Configuração
+- [ ] Arquivo `.env` configurado
+- [ ] SECRET_KEY não é valor padrão
+- [ ] ADMIN_PASSWORD definida
+- [ ] Logs de inicialização sem erros
+
+#### Testes Automatizados
+- [ ] `pytest -v` executa sem falhas
+- [ ] Coverage acima de 80%
+- [ ] Testes específicos de banco passam
 
 **Importante**: O host 'db' é usado no contexto de containers Docker. Para desenvolvimento local, substitua 'db' por 'localhost' se necessário.
 

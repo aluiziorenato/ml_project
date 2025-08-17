@@ -242,35 +242,166 @@ O backend utiliza OAuth2 para autenticação com Mercado Libre.
 
 ## 🧪 Testes
 
-### Testes Locais (sem Docker)
+### 🔍 Testes de Conexão com Banco de Dados
 
-Para rodar os testes do backend localmente:
+Use o script `check_db.py` para diagnosticar problemas de conexão:
+
+```bash
+# Teste básico de conexão (Docker)
+cd backend
+python scripts/check_db.py
+
+# Teste com informações detalhadas
+python scripts/check_db.py --verbose
+
+# Teste completo incluindo operações CRUD
+python scripts/check_db.py --test-crud
+
+# Teste para desenvolvimento local (substitua 'db' por 'localhost')
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/ml_db python scripts/check_db.py
+```
+
+**Configurações de Host**:
+- **Docker Compose**: Use `@db:5432` (serviço db no Docker)
+- **Local**: Use `@localhost:5432` (PostgreSQL local)
+
+### 🧪 Testes Automatizados
+
+#### Com Docker (Recomendado)
+
+```bash
+# 1. Subir apenas o banco de dados
+docker-compose up -d db
+
+# 2. Executar testes no container backend
+docker-compose exec backend pytest -v
+
+# 3. Testes com cobertura
+docker-compose exec backend pytest --cov=app --cov-report=html --cov-report=term-missing
+
+# 4. Testes específicos
+docker-compose exec backend pytest tests/test_db_coverage.py -v
+```
+
+#### Localmente (sem Docker)
 
 ```bash
 cd backend
+
+# 1. Instalar dependências
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
 pip install -r requirements.txt
-pytest -q
+
+# 2. Configurar variável de ambiente para local
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/ml_db
+
+# 3. Executar testes
+pytest -v
+
+# 4. Com cobertura
+pytest --cov=app --cov-report=html
 ```
 
-### Testes com Docker (Recomendado)
+### 🔧 Testes Manuais com psql
 
-Para testes automatizados usando a configuração padronizada com host 'db':
+Teste a conexão diretamente com PostgreSQL:
 
 ```bash
-# Subir serviços de teste
-docker-compose up -d db
+# Docker Compose
+docker-compose exec db psql -U postgres -d ml_db
 
-# Executar testes no container
-docker-compose exec backend pytest -v
+# Local
+psql -h localhost -U postgres -d ml_db
 
-# Ou executar testes com database real
-export DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
-cd backend && pytest
+# Comandos úteis no psql:
+\l          # Listar bancos
+\dt         # Listar tabelas
+\d users    # Descrever tabela users
+SELECT 1;   # Teste básico
+\q          # Sair
 ```
 
-**Importante**: Todos os testes automatizados devem usar o host 'db' quando executados em ambiente Docker/container. A string de conexão padrão `postgresql+psycopg2://postgres:postgres@db:5432/ml_db` garante compatibilidade com Docker Compose e ambientes de CI/CD.
+### 🌍 Validação de Variáveis de Ambiente
+
+#### Para Docker Compose
+
+Arquivo `backend/.env`:
+```env
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+SECRET_KEY=sua-chave-secreta-forte
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=sua-senha-admin
+ML_CLIENT_ID=seu-client-id
+ML_CLIENT_SECRET=seu-client-secret
+```
+
+#### Para Desenvolvimento Local
+
+Arquivo `backend/.env`:
+```env
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/ml_db
+SECRET_KEY=sua-chave-secreta-forte
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=sua-senha-admin
+```
+
+### 📋 Validação de Logs na Inicialização
+
+#### Docker Compose
+```bash
+# Ver logs do backend
+docker-compose logs backend
+
+# Ver logs em tempo real
+docker-compose logs -f backend
+
+# Verificar se backend conectou ao banco
+docker-compose logs backend | grep -i "database\|connection\|error"
+```
+
+#### Logs Esperados (Sucesso)
+```
+✅ Database connection established
+✅ Created default admin user: admin@example.com
+✅ Application startup complete
+```
+
+#### Logs de Erro (Problemas)
+```
+❌ Could not connect to database
+❌ Connection refused
+❌ Authentication failed
+```
+
+### ✅ Checklist de Validação
+
+#### Teste de Conexão Básica
+- [ ] PostgreSQL está rodando (`docker-compose ps` ou `systemctl status postgresql`)
+- [ ] Variável `DATABASE_URL` configurada corretamente
+- [ ] Host correto: `db` (Docker) ou `localhost` (local)
+- [ ] Credenciais corretas (usuário: `postgres`, senha: `postgres`)
+- [ ] Banco `ml_db` existe
+
+#### Teste CRUD
+- [ ] Script `check_db.py --test-crud` executa sem erros
+- [ ] Tabela de teste é criada, populada e removida
+- [ ] Operações INSERT, SELECT, UPDATE, DELETE funcionam
+
+#### Teste de Ambiente
+- [ ] Arquivo `.env` existe e está configurado
+- [ ] `SECRET_KEY` não é valor padrão
+- [ ] `ADMIN_PASSWORD` está definida
+- [ ] Configurações ML são válidas (se usadas)
+
+#### Teste de Logs
+- [ ] Backend inicia sem erros
+- [ ] Conexão com banco é estabelecida
+- [ ] Usuário admin é criado (se não existir)
+- [ ] Nenhum erro crítico nos logs
+
+**Importante**: Use `@db:5432` para Docker e `@localhost:5432` para desenvolvimento local. A string de conexão padrão garante compatibilidade com ambientes containerizados.
 
 ---
 

@@ -58,24 +58,81 @@ DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
 MLFLOW_TRACKING_URI=http://localhost:5000
 ```
 
-### Passo 4: Executar Testes
+### Passo 4: Validar Instalação
+
+#### 4.1 Teste de Conexão com Banco
+
+Use o script de diagnóstico para verificar a conexão:
+
+```bash
+cd backend
+
+# Teste básico de conexão
+python scripts/check_db.py
+
+# Teste completo com CRUD
+python scripts/check_db.py --test-crud --verbose
+```
+
+#### 4.2 Executar Testes Automatizados
 
 Valide a instalação executando os testes automatizados:
 
 ```bash
-# Executar testes com Docker (recomendado)
+# Opção A: Com Docker (recomendado)
+docker-compose up -d db
 docker-compose exec backend pytest -v
 
-# Ou executar testes localmente
+# Opção B: Localmente
 cd backend
-export DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
-pytest
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/ml_db
+pytest -v
 
 # Verificar cobertura de testes
 docker-compose exec backend pytest --cov=app --cov-report=term-missing
 ```
 
-**Nota**: Os testes usam a configuração padronizada com host 'db' para Docker Compose. Certifique-se de que o serviço de banco está rodando antes de executar os testes.
+#### 4.3 Validar Logs de Inicialização
+
+```bash
+# Ver logs do backend
+docker-compose logs backend
+
+# Verificar se há erros
+docker-compose logs backend | grep -i "error\|exception"
+
+# Logs esperados (sucesso):
+# ✅ Database connection established
+# ✅ Created default admin user: admin@example.com
+# ✅ Application startup complete
+```
+
+#### 4.4 Teste Manual com psql
+
+```bash
+# Conectar ao banco via Docker
+docker-compose exec db psql -U postgres -d ml_db
+
+# Ou localmente
+psql -h localhost -U postgres -d ml_db
+
+# Comandos de teste:
+\l              # Listar bancos
+\dt             # Listar tabelas
+SELECT 1;       # Teste básico
+\q              # Sair
+```
+
+#### ✅ Checklist de Validação
+
+- [ ] Script `check_db.py` executa sem erros
+- [ ] Conexão com PostgreSQL estabelecida
+- [ ] Testes automatizados passam (`pytest -v`)
+- [ ] Logs de inicialização sem erros críticos
+- [ ] Usuário admin criado automaticamente
+- [ ] Variáveis de ambiente configuradas
+
+**Nota**: Use host `@db:5432` para Docker e `@localhost:5432` para desenvolvimento local. Certifique-se de que o serviço de banco está rodando antes de executar os testes.
 
 ## 🧪 Primeiro Experimento
 
@@ -712,6 +769,124 @@ scheduler.start()
 - [ ] ✅ Documentação lida completamente
 - [ ] ✅ Melhores práticas compreendidas
 - [ ] ✅ Próximos passos definidos
+
+## 🔧 Resolução de Problemas
+
+### Problemas de Conexão com Banco
+
+#### ❌ "Connection refused"
+```bash
+# Verificar se PostgreSQL está rodando
+docker-compose ps db
+
+# Se não estiver rodando, inicializar
+docker-compose up -d db
+
+# Para desenvolvimento local
+systemctl status postgresql
+sudo systemctl start postgresql  # se necessário
+```
+
+#### ❌ "Authentication failed"
+```bash
+# Verificar credenciais no .env
+cat backend/.env | grep DATABASE_URL
+
+# Padrão esperado:
+# Docker: postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+# Local:  postgresql+psycopg2://postgres:postgres@localhost:5432/ml_db
+```
+
+#### ❌ "Database does not exist"
+```bash
+# Criar banco via Docker
+docker-compose exec db createdb ml_db -U postgres
+
+# Ou localmente
+createdb ml_db -U postgres
+```
+
+### Problemas com Testes
+
+#### ❌ Testes falhando com "No module named 'app'"
+```bash
+# Verificar se está no diretório correto
+pwd  # Deve estar em /path/to/ml_project/backend
+
+# Verificar PYTHONPATH
+export PYTHONPATH=$PWD:$PYTHONPATH
+```
+
+#### ❌ "pydantic_settings not found"
+```bash
+# Instalar dependências
+cd backend
+pip install -r requirements.txt
+
+# Ou via Docker
+docker-compose exec backend pip install -r requirements.txt
+```
+
+### Problemas com Variáveis de Ambiente
+
+#### ❌ Arquivo .env não encontrado
+```bash
+# Copiar exemplo
+cd backend
+cp .env.example .env
+
+# Editar configurações
+vim .env  # ou nano .env
+```
+
+#### ❌ Configurações não carregam
+```bash
+# Verificar se arquivo .env está no local correto
+ls -la backend/.env
+
+# Testar carregamento manual
+cd backend
+python -c "from app.settings import settings; print(settings.database_url)"
+```
+
+### Problemas com Docker
+
+#### ❌ "Port already in use"
+```bash
+# Verificar portas em uso
+netstat -tulpn | grep :5432  # PostgreSQL
+netstat -tulpn | grep :8000  # Backend
+
+# Parar outros serviços ou alterar portas no docker-compose.yml
+```
+
+#### ❌ "No space left on device"
+```bash
+# Limpar containers e imagens não utilizados
+docker system prune -a
+
+# Verificar espaço em disco
+df -h
+```
+
+### ✅ Comandos de Diagnóstico Rápido
+
+```bash
+# 1. Verificar status dos serviços
+docker-compose ps
+
+# 2. Testar conexão com banco
+cd backend && python scripts/check_db.py
+
+# 3. Ver logs em tempo real
+docker-compose logs -f backend
+
+# 4. Testar aplicação
+curl http://localhost:8000/health  # Se endpoint existir
+
+# 5. Executar teste rápido
+cd backend && python -c "from app.config import settings; print('✅ Config OK')"
+```
 
 ## 🆘 Precisa de Ajuda?
 
