@@ -3,7 +3,7 @@ uvicorn[standard]==0.32.1
 pydantic==2.10.4
 python-multipart==0.0.20
 httpx==0.28.1
-spacy==3.8.2
+spacy==3.8.7
 nltk==3.9.1
 textstat==0.7.3
 python-jose[cryptography]==3.5.0
