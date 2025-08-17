@@ -719,6 +719,36 @@ pytest --cov=app --cov-report=term-missing | grep -E "^app/"
 - ✅ Alertas quando cobertura cai abaixo de 80%
 - ✅ Retenção de 30 dias para relatórios históricos
 
+#### 🤖 **NOVO**: Automação de Testes de Publicação
+
+**Workflow de Validação Automática**: `test-coverage-automation.yml`
+
+**Testes Implementados**:
+- ✅ **Geração HTML/XML**: Valida estrutura e conteúdo dos relatórios
+- ✅ **Upload de Artefatos**: Testa processo de upload no workflow
+- ✅ **Acesso da Equipe**: Verifica documentação e acessibilidade
+- ✅ **Cenários Diversos**: Simula sucesso/falha e recuperação
+- ✅ **Auditoria Contínua**: Trilhas de auditoria para compliance
+
+**Execução Automática**:
+- 🔄 A cada commit e PR
+- 🔄 Diariamente para monitoramento preventivo
+- 🔄 Manual via GitHub Actions
+
+**Scripts de Validação Local**:
+```bash
+# Validação rápida
+cd backend && python validate_coverage_automation.py
+
+# Demo completo da automação  
+python tests/demo_coverage_automation.py
+
+# Testes com pytest
+pytest tests/test_coverage_automation.py -v
+```
+
+**Objetivo**: Garantir auditoria e visibilidade constantes do progresso dos testes.
+
 ---
 
 ## 🔄 Processo de Melhoria Contínua

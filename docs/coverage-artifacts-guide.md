@@ -130,6 +130,67 @@ O pipeline irá alertar quando:
 - Módulos críticos ficarem abaixo das metas
 - Houve regressão significativa (>5%) comparado ao branch principal
 
+## 🤖 Automação de Testes de Cobertura
+
+### Validação Automática do Pipeline
+
+O projeto agora inclui automação completa para testar a publicação de relatórios de cobertura no pipeline CI/CD:
+
+#### 🧪 Workflow de Teste: `test-coverage-automation.yml`
+
+**Testes Automatizados**:
+- ✅ **Validação de Geração HTML/XML**: Verifica estrutura e qualidade dos relatórios
+- ✅ **Teste de Upload de Artefatos**: Simula e valida o processo de upload
+- ✅ **Verificação de Acesso da Equipe**: Testa documentação e acessibilidade
+- ✅ **Cenários de Sucesso/Falha**: Testa recuperação de erros e cenários diversos
+- ✅ **Auditoria e Monitoramento**: Gera trilhas de auditoria para compliance
+
+**Execução Automática**:
+- 🔄 **A cada commit**: Validação contínua
+- 🔄 **Em Pull Requests**: Verificação antes do merge
+- 🔄 **Diariamente às 2h UTC**: Monitoramento preventivo
+- 🔄 **Execução manual**: Via workflow_dispatch
+
+#### 📊 Scripts de Validação
+
+**Scripts Disponíveis**:
+- `tests/test_coverage_automation.py` - Framework principal de testes
+- `backend/tests/test_backend_coverage_automation.py` - Testes específicos do backend
+- `tests/demo_coverage_automation.py` - Demo interativo da automação
+- `backend/validate_coverage_automation.py` - Validação simples
+
+**Como Executar Localmente**:
+```bash
+# Validação rápida
+cd backend
+python validate_coverage_automation.py
+
+# Demo completo
+cd ../
+python tests/demo_coverage_automation.py
+
+# Testes completos com pytest
+pytest tests/test_coverage_automation.py -v
+```
+
+#### 🎯 Objetivos de Auditoria
+
+A automação garante:
+- **Visibilidade Constante**: Progresso dos testes sempre visível
+- **Auditoria Contínua**: Trilhas de auditoria automáticas
+- **Acesso da Equipe**: Validação de acessibilidade dos relatórios
+- **Recuperação de Falhas**: Testes de cenários de erro
+- **Compliance**: Documentação e processos validados
+
+#### 📈 Métricas de Monitoramento
+
+**Indicadores Validados**:
+- Taxa de sucesso na geração de relatórios
+- Tempo de resposta do processo de upload
+- Acessibilidade da documentação
+- Integridade dos artefatos gerados
+- Eficácia da recuperação de falhas
+
 ## 🛠️ Integrações Disponíveis
 
 ### 1. Codecov Dashboard
