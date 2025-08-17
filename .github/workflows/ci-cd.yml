@@ -382,7 +382,7 @@ jobs:
         name: backend-coverage
 
     - name: Upload backend coverage artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: backend-coverage-${{ github.run_number }}
@@ -459,7 +459,7 @@ jobs:
         name: backend-integration-coverage
 
     - name: Upload backend integration coverage artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: backend-integration-coverage-${{ github.run_number }}
@@ -1090,7 +1090,7 @@ jobs:
         npx cypress run --headless --browser chrome
 
     - name: Upload Cypress screenshots and videos
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: failure()
       with:
         name: cypress-screenshots-videos
@@ -1596,14 +1596,14 @@ jobs:
         EOF
 
     - name: Upload comprehensive coverage reports as artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-reports-${{ github.run_number }}
         path: consolidated-coverage-reports/
         retention-days: 30
 
     - name: Upload coverage reports (latest)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-reports-latest
         path: consolidated-coverage-reports/
