@@ -93,8 +93,11 @@ simple_tracking/
 *.p12
 secrets.txt
 secrets/
-*secret*
-*token*
-*credentials*
+*secret*.txt
+*secret*.json
+*token*.txt
+*token*.json
+*credentials*.txt
+*credentials*.json
 deployment-tokens/
 mlruns/
