@@ -1268,7 +1268,7 @@ jobs:
 
     - name: Comment PR with deploy status
       if: github.event_name == 'pull_request'
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           github.rest.issues.createComment({
@@ -1638,7 +1638,7 @@ jobs:
 
     - name: Comment PR with coverage summary
       if: github.event_name == 'pull_request'
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           const backendCoverage = '${{ steps.coverage-summary.outputs.backend_coverage }}';
@@ -1978,7 +1978,7 @@ jobs:
 
     - name: Create GitHub issue on failure
       if: needs.deploy.result == 'failure'
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           const title = `🚨 Production Deployment Failure - ${context.sha.substring(0, 7)}`;
