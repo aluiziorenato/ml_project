@@ -157,7 +157,7 @@ docker compose up -d --build
 ### 3. Access the System
 - **Frontend Dashboard**: http://localhost:3000
 - **Main Backend API**: http://localhost:8000/docs
-- **PostgreSQL**: localhost:5432
+- **PostgreSQL**: db:5432 (Docker), localhost:5432 (local)
 - **pgAdmin**: http://localhost:8080
 - **Redis**: localhost:6379
 

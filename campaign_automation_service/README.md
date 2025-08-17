@@ -105,7 +105,7 @@ docker-compose up
 pip install -r requirements.txt
 
 # Set environment variables
-export DATABASE_URL="postgresql://usuario:senha@localhost:5432/nome_do_banco"
+export DATABASE_URL="postgresql+psycopg2://postgres:postgres@db:5432/ml_db"
 export REDIS_URL="redis://localhost:6379/14"
 export SIMULATOR_SERVICE_URL="http://localhost:8001"
 export OPTIMIZER_AI_URL="http://localhost:8003"

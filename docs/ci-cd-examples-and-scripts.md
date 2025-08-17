@@ -201,7 +201,7 @@ test-backend-integration:
         pip install -r requirements-test.txt
     - name: Run integration tests
       env:
-        DATABASE_URL: postgresql://usuario:senha@localhost:5432/nome_do_banco
+        DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/ml_db
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       run: |
         cd backend

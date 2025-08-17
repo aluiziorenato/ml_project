@@ -168,7 +168,7 @@ PORT=8016
 HOST=0.0.0.0
 
 # Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/db
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
 
 # Redis
 REDIS_URL=redis://localhost:6379/15
