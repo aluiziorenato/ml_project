@@ -46,6 +46,14 @@ model_predictions = Counter('ml_model_predictions_total', 'Total ML model predic
 model_training_duration = Histogram('ml_model_training_duration_seconds', 'ML model training duration')
 model_accuracy = Gauge('ml_model_accuracy', 'ML model accuracy score', ['model_name'])
 
+# Security metrics
+security_events = Counter('security_events_total', 'Security events', ['event_type'])
+failed_auth_attempts = Counter('failed_auth_attempts_total', 'Failed authentication attempts', ['ip_address'])
+
+# Infrastructure metrics  
+queue_size = Gauge('queue_size', 'Background task queue size', ['queue_name'])
+cache_operations = Counter('cache_operations_total', 'Cache operations', ['operation', 'result'])
+
 logger = logging.getLogger(__name__)
 
 def update_system_metrics():
@@ -100,6 +108,22 @@ def record_model_prediction(model_name: str):
 def set_model_accuracy(model_name: str, accuracy: float):
     """Set ML model accuracy"""
     model_accuracy.labels(model_name=model_name).set(accuracy)
+
+def record_security_event(event_type: str):
+    """Record security event"""
+    security_events.labels(event_type=event_type).inc()
+
+def record_failed_auth(ip_address: str):
+    """Record failed authentication attempt"""
+    failed_auth_attempts.labels(ip_address=ip_address).inc()
+
+def set_queue_size(queue_name: str, size: int):
+    """Set queue size"""
+    queue_size.labels(queue_name=queue_name).set(size)
+
+def record_cache_operation(operation: str, result: str):
+    """Record cache operation"""
+    cache_operations.labels(operation=operation, result=result).inc()
 
 def get_metrics():
     """Get all metrics in Prometheus format"""
