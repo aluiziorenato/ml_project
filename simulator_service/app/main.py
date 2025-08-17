@@ -92,7 +92,9 @@ app.add_middleware(
 )
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+import os
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class CampaignSimulationRequest(BaseModel):
     product_name: str
@@ -288,9 +290,13 @@ def generate_csv_report(campaign_ids: List[str]) -> str:
     return df.to_csv(index=False)
 
 @app.get("/", response_class=HTMLResponse)
+async def root():
     """Serve the main frontend page"""
-    with open("static/index.html", "r", encoding="utf-8") as file:
-        return HTMLResponse(content=file.read())
+    try:
+        with open("static/index.html", "r", encoding="utf-8") as file:
+            return HTMLResponse(content=file.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Simulator Service</h1><p>Frontend not available</p>")
 
 @app.get("/health")
 async def health_check():
