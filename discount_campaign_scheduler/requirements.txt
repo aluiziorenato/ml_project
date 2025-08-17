@@ -34,7 +34,7 @@ scikit-learn==1.5.2
 python-dateutil==2.9.0
 
 # Monitoring & Metrics
-prometheus-client==0.21.1
+prometheus-client==0.22.1
 
 # Testing
 pytest==8.4.1
