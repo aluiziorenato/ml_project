@@ -49,8 +49,11 @@ services:
     environment:
       DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/0
+      PORT: ${PORT:-8000}
+    # ports:
+    #   - "8000:8000"
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:${PORT:-8000}"
     depends_on:
       - db
       - redis
