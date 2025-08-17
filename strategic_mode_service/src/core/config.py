@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     PORT: int = 8017
     
     # Database
-    DATABASE_URL: str = "postgresql://usuario:senha@db:5432/nome_do_banco"
+    DATABASE_URL: str = "postgresql://usuario:senha@db-1:5432/nome_do_banco"
     
     # Redis
     REDIS_URL: str = "redis://redis:6379/16"
