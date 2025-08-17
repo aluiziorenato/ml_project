@@ -120,7 +120,7 @@ Successfully implemented the `discount_campaign_scheduler` module as an independ
 
 The service uses environment variables for configuration:
 ```bash
-DATABASE_URL=postgresql://user:pass@db:5432/db_name
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
 REDIS_URL=redis://redis:6379/15
 SIMULATOR_SERVICE_URL=http://simulator_service:8001
 OPTIMIZER_AI_URL=http://optimizer_ai:8003

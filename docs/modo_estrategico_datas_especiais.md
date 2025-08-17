@@ -500,7 +500,7 @@ const StrategyDashboard = () => {
 # Strategic Mode Service
 STRATEGIC_MODE_SERVICE_PORT=8017
 STRATEGIC_MODE_SECRET_KEY=strategic-mode-secret-key
-STRATEGIC_MODE_DATABASE_URL=postgresql://user:pass@db:5432/strategic_db
+STRATEGIC_MODE_DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
 
 # Integração com serviços
 ACOS_SERVICE_URL=http://acos_service:8016
