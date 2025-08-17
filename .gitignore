@@ -80,3 +80,8 @@ locustfile.py
 /tmp/
 .tmp/
 *.tmp
+
+# AutoML results and tracking (exclude from version control)
+automl_results/
+simple_tracking/
+mlruns/
