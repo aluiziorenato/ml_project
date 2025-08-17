@@ -530,7 +530,7 @@ strategic_mode_service:
     dockerfile: Dockerfile
   restart: unless-stopped
   environment:
-    DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
+    DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/ml_db
     REDIS_URL: redis://redis:6379/16
     ACOS_SERVICE_URL: http://acos_service:8016
     CAMPAIGN_SERVICE_URL: http://campaign_automation_service:8014

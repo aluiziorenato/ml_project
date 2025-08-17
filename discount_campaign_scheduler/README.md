@@ -197,7 +197,7 @@ O sistema utiliza um algoritmo proprietário que combina múltiplos fatores:
 
 ### Variáveis de Ambiente
 ```bash
-DATABASE_URL=postgresql://usuario:senha@db:5432/nome_do_banco
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
 REDIS_URL=redis://redis:6379/15
 BACKEND_URL=http://backend:8000
 ML_API_URL=https://api.mercadolibre.com
@@ -215,7 +215,7 @@ discount_campaign_scheduler:
   ports:
     - "8015:8015"
   environment:
-    - DATABASE_URL=postgresql://usuario:senha@db:5432/nome_do_banco
+    - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
     - REDIS_URL=redis://redis:6379/15
   depends_on:
     - db
