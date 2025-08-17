@@ -84,4 +84,17 @@ locustfile.py
 # AutoML results and tracking (exclude from version control)
 automl_results/
 simple_tracking/
+
+# 🔐 Security: Never commit secrets or sensitive files
+.env
+.env.*
+*.key
+*.pem
+*.p12
+secrets.txt
+secrets/
+*secret*
+*token*
+*credentials*
+deployment-tokens/
 mlruns/
