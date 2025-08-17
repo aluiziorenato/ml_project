@@ -1,0 +1,36 @@
+{
+  "experiment_id": "exp_20250817_005606",
+  "problem_type": "classification",
+  "data_shape": [
+    1000,
+    10
+  ],
+  "models_tested": [
+    {
+      "model_name": "random_forest",
+      "score": 0.945,
+      "predictions_sample": [
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "model_name": "logistic_regression",
+      "score": 0.835,
+      "predictions_sample": [
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "best_model": "random_forest",
+  "best_score": 0.945,
+  "started_at": "2025-08-17T00:56:06.381006",
+  "completed_at": "2025-08-17T00:56:06.601511"
+}

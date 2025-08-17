@@ -1,0 +1,41 @@
+{
+  "comparison_id": "comp_20250817_005735",
+  "model_type": "random_forest_classifier",
+  "data_shape": [
+    500,
+    10
+  ],
+  "methods_compared": [
+    "random_search",
+    "bayesian"
+  ],
+  "results": {
+    "random_search": {
+      "best_score": 0.9060313108722314,
+      "best_params": {
+        "n_estimators": 200,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "max_features": "sqrt",
+        "max_depth": 10
+      },
+      "duration_seconds": 10.518587,
+      "method_info": "random_search"
+    },
+    "bayesian": {
+      "best_score": 0.9040473270326816,
+      "best_params": {
+        "n_estimators": "200",
+        "max_depth": 10,
+        "min_samples_split": "2",
+        "min_samples_leaf": "4",
+        "max_features": null
+      },
+      "duration_seconds": 5.053652,
+      "method_info": "bayesian_optimization_simple"
+    }
+  },
+  "best_method": "random_search",
+  "best_overall_score": 0.9060313108722314,
+  "completed_at": "2025-08-17T00:57:35.142292"
+}
