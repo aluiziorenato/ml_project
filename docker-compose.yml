@@ -1,6 +1,6 @@
 services:
   # Database Services
-  db-1:
+  db:
     image: postgres:15
     restart: unless-stopped
     environment:
@@ -23,7 +23,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - db-1
+      - db
     networks:
       - ml_network
 
@@ -47,7 +47,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/0
       PORT: ${PORT:-8000}
     # ports:
@@ -55,7 +55,7 @@ services:
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -81,12 +81,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/1
     ports:
       - "8001:8001"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -97,12 +97,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/2
     ports:
       - "8002:8002"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -113,12 +113,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/3
     ports:
       - "8003:8003"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -130,12 +130,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/4
     ports:
       - "8004:8004"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -146,12 +146,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/5
     ports:
       - "8005:8005"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -162,12 +162,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/6
     ports:
       - "8006:8006"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -178,12 +178,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/7
     ports:
       - "8007:8007"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -194,12 +194,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/8
     ports:
       - "8008:8008"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -210,12 +210,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/9
     ports:
       - "8009:8009"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -226,12 +226,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/10
     ports:
       - "8010:8010"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -242,12 +242,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/11
     ports:
       - "8011:8011"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -258,12 +258,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/12
     ports:
       - "8012:8012"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -274,12 +274,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/13
     ports:
       - "8013:8013"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -291,7 +291,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/14
       SIMULATOR_SERVICE_URL: http://simulator_service:8001
       OPTIMIZER_AI_URL: http://optimizer_ai:8003
@@ -302,7 +302,7 @@ services:
     ports:
       - "8014:8014"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -314,7 +314,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/15
       CAMPAIGN_SERVICE_URL: http://campaign_automation_service:8014
       AI_SERVICE_URL: http://ai_predictive:8005
@@ -322,7 +322,7 @@ services:
     ports:
       - "8016:8016"
     depends_on:
-      - db-1
+      - db
       - redis
       - campaign_automation_service
     networks:
@@ -335,7 +335,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/15
       CELERY_BROKER_URL: redis://redis:6379/15
       CELERY_RESULT_BACKEND: redis://redis:6379/15
@@ -349,7 +349,7 @@ services:
     ports:
       - "8015:8015"
     depends_on:
-      - db-1
+      - db
       - redis
       - backend
     networks:
@@ -363,7 +363,7 @@ services:
     restart: unless-stopped
     command: celery -A app.tasks worker --loglevel=info
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/15
       CELERY_BROKER_URL: redis://redis:6379/15
       CELERY_RESULT_BACKEND: redis://redis:6379/15
@@ -373,7 +373,7 @@ services:
       ML_CLIENT_SECRET: ${ML_CLIENT_SECRET:-}
       SECRET_KEY: discount-campaign-scheduler-secret-key-change-in-production
     depends_on:
-      - db-1
+      - db
       - redis
       - discount_campaign_scheduler
     networks:
@@ -387,7 +387,7 @@ services:
     restart: unless-stopped
     command: celery -A app.tasks beat --loglevel=info
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/15
       CELERY_BROKER_URL: redis://redis:6379/15
       CELERY_RESULT_BACKEND: redis://redis:6379/15
@@ -397,7 +397,7 @@ services:
       ML_CLIENT_SECRET: ${ML_CLIENT_SECRET:-}
       SECRET_KEY: discount-campaign-scheduler-secret-key-change-in-production
     depends_on:
-      - db-1
+      - db
       - redis
       - discount_campaign_scheduler
     networks:
@@ -410,7 +410,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/16
       ACOS_SERVICE_URL: http://acos_service:8016
       CAMPAIGN_SERVICE_URL: http://campaign_automation_service:8014
@@ -423,7 +423,7 @@ services:
     ports:
       - "8017:8017"
     depends_on:
-      - db-1
+      - db
       - redis
       - acos_service
       - campaign_automation_service
@@ -438,13 +438,13 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/17
       SECRET_KEY: gamification-service-secret-key-change-in-production
     ports:
       - "8018:8018"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -456,7 +456,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/18
       SECRET_KEY: alerts-service-secret-key-change-in-production
       SMTP_SERVER: ${SMTP_SERVER:-smtp.gmail.com}
@@ -467,7 +467,7 @@ services:
     ports:
       - "8019:8019"
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -480,10 +480,10 @@ services:
     restart: unless-stopped
     command: celery -A app.celery_app worker --loglevel=info
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/0
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
@@ -496,10 +496,10 @@ services:
     restart: unless-stopped
     command: celery -A app.celery_app beat --loglevel=info
     environment:
-      DATABASE_URL: postgresql://usuario:senha@db-1:5432/nome_do_banco
+      DATABASE_URL: postgresql://usuario:senha@db:5432/nome_do_banco
       REDIS_URL: redis://redis:6379/0
     depends_on:
-      - db-1
+      - db
       - redis
     networks:
       - ml_network
