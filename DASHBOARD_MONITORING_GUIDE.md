@@ -386,21 +386,56 @@ docker-compose logs prometheus
 docker-compose logs grafana
 ```
 
+## 🧪 Testes de Integração
+
+Para validar o sistema de monitoramento, execute os testes de integração:
+
+```bash
+# Testes de integração Prometheus/Grafana
+cd backend
+python test_integration_runner.py
+
+# Testes específicos de métricas
+python -m pytest tests/integration/test_prometheus_grafana_integration.py -v
+
+# Testes de stress e carga
+python -m pytest tests/integration/test_monitoring_load_stress.py -v
+
+# Validação de dashboards
+python -m pytest tests/integration/test_dashboard_validation.py -v
+```
+
+## 📊 Exemplos Completos de Dashboards
+
+Para exemplos detalhados de dashboards, queries e alertas, consulte:
+
+📋 **[Grafana Dashboard Examples](../docs/grafana-dashboard-examples.md)**
+
+Este documento inclui:
+- 🎯 Dashboards completos (Sistema, Negócios, Alertas)
+- 🔔 Configuração de alertas Prometheus
+- 🏭 Instruções de validação em produção
+- 🧪 Scripts de teste automatizados
+- 🔧 Troubleshooting comum
+
 ## 📈 Próximos Passos
 
-1. **Personalizar Dashboards**: Criar dashboards específicos para seu negócio
-2. **Alertas Avançados**: Configurar alertas via email/Slack
-3. **Métricas de Negócio**: Adicionar métricas específicas do domínio
-4. **Distributed Tracing**: Integrar Jaeger para tracing distribuído
-5. **Logs Estruturados**: Expandir logging estruturado por toda aplicação
+1. **✅ Implementar Testes**: Executar testes de integração Prometheus/Grafana
+2. **📊 Configurar Dashboards**: Usar exemplos do guia completo
+3. **🚨 Configurar Alertas**: Implementar regras de alerta críticas
+4. **🏭 Validar Produção**: Executar checklist de validação
+5. **🔍 Monitoramento Contínuo**: Estabelecer métricas de qualidade
 
 ## 📞 Suporte
 
 Para dúvidas ou problemas:
-1. Verificar logs dos serviços
-2. Consultar documentação do Grafana/Prometheus/Loki
-3. Abrir issue no repositório
+1. ✅ Executar `python test_integration_runner.py` para diagnóstico
+2. 📚 Consultar [exemplos completos de dashboards](../docs/grafana-dashboard-examples.md)
+3. 🔍 Verificar logs dos serviços
+4. 📖 Consultar documentação do Grafana/Prometheus/Loki
+5. 🐛 Abrir issue no repositório
 
 ---
 
-**Desenvolvido com ❤️ para o ML Project**
+**Desenvolvido com ❤️ para o ML Project**  
+**🧪 Inclui testes de integração completos para Prometheus/Grafana**
