@@ -54,9 +54,28 @@ vim backend/.env
 ```env
 # Configurações mínimas
 SECRET_KEY=dev-secret-key-change-in-production
-DATABASE_URL=postgresql://ml_user:ml_password@localhost:5432/ml_project
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
 MLFLOW_TRACKING_URI=http://localhost:5000
 ```
+
+### Passo 4: Executar Testes
+
+Valide a instalação executando os testes automatizados:
+
+```bash
+# Executar testes com Docker (recomendado)
+docker-compose exec backend pytest -v
+
+# Ou executar testes localmente
+cd backend
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/ml_db
+pytest
+
+# Verificar cobertura de testes
+docker-compose exec backend pytest --cov=app --cov-report=term-missing
+```
+
+**Nota**: Os testes usam a configuração padronizada com host 'db' para Docker Compose. Certifique-se de que o serviço de banco está rodando antes de executar os testes.
 
 ## 🧪 Primeiro Experimento
 

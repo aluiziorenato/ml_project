@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # Database configuration
-    database_url: str = "postgresql://usuario:senha@localhost:5432/nome_do_banco"
+    database_url: str = "postgresql+psycopg2://postgres:postgres@db:5432/ml_db"
     
     # Redis configuration
     redis_url: str = "redis://localhost:6379/0"

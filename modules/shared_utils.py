@@ -164,7 +164,7 @@ class SEOAnalyzer:
 def get_config():
     """Get common configuration for all SEO modules"""
     return {
-        'database_url': os.getenv('DATABASE_URL', 'postgresql://usuario:senha@localhost:5432/nome_do_banco'),
+        'database_url': os.getenv('DATABASE_URL', 'postgresql+psycopg2://postgres:postgres@db:5432/ml_db'),
         'redis_url': os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
         'ml_api_url': os.getenv('ML_API_URL', 'https://api.mercadolibre.com'),
         'debug': os.getenv('DEBUG', 'false').lower() == 'true',
