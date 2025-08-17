@@ -6,7 +6,7 @@ from unittest.mock import Mock, AsyncMock, patch, MagicMock
 import httpx
 from datetime import datetime, timedelta
 
-from app.services.seo import optimize_text, clean_text, extract_keywords, generate_slug
+from app.services.seo import optimize_text, _clean_text as clean_text, _extract_keywords as extract_keywords, _generate_slug as generate_slug
 from app.services.mercadolibre import (
     generate_code_verifier, 
     generate_code_challenge,
