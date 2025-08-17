@@ -372,7 +372,7 @@ jobs:
         SECRET_KEY: ${{ env.SECRET_KEY }}
       run: |
         cd backend
-        pytest --cov=app --cov-report=xml --cov-report=term-missing tests/
+        pytest --cov=app --cov-report=html --cov-report=xml --cov-report=term-missing tests/
 
     - name: Upload backend coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -380,6 +380,16 @@ jobs:
         file: ./backend/coverage.xml
         flags: backend
         name: backend-coverage
+
+    - name: Upload backend coverage artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: backend-coverage-${{ github.run_number }}
+        path: |
+          backend/coverage.xml
+          backend/htmlcov/
+        retention-days: 14
 
   test-backend-integration:
     runs-on: ubuntu-latest
@@ -439,7 +449,7 @@ jobs:
         SENTRY_TRACES_SAMPLE_RATE: ${{ env.SENTRY_TRACES_SAMPLE_RATE }}
       run: |
         cd backend
-        pytest tests/test_backend_integration.py -v --cov=app --cov-report=xml --cov-report=term-missing
+        pytest tests/test_backend_integration.py -v --cov=app --cov-report=html --cov-report=xml --cov-report=term-missing
 
     - name: Upload backend integration coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -447,6 +457,16 @@ jobs:
         file: ./backend/coverage.xml
         flags: backend-integration
         name: backend-integration-coverage
+
+    - name: Upload backend integration coverage artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: backend-integration-coverage-${{ github.run_number }}
+        path: |
+          backend/coverage.xml
+          backend/htmlcov/
+        retention-days: 14
 
   test-simulator-service:
     runs-on: ubuntu-latest
@@ -1328,44 +1348,203 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Generate coverage badge
-      run: |
-        echo "📊 Generating coverage badge..."
-        # Add coverage badge generation logic
-        # Example: coverage-badge -o coverage.svg
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Comment PR with coverage
+    - name: Install coverage tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install coverage pytest pytest-cov coverage-badge
+
+    - name: Download coverage artifacts from test jobs
+      uses: actions/download-artifact@v3
+      with:
+        path: coverage-artifacts
+      continue-on-error: true
+
+    - name: Set up backend environment and generate main coverage report
+      env:
+        DATABASE_URL: ${{ env.DATABASE_URL }}
+        SECRET_KEY: ${{ env.SECRET_KEY }}
+        ML_CLIENT_ID: ${{ env.ML_CLIENT_ID }}
+        ML_CLIENT_SECRET: ${{ env.ML_CLIENT_SECRET }}
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt || pip install pytest pytest-asyncio pytest-cov httpx
+        
+        # Generate comprehensive coverage report
+        echo "📊 Generating comprehensive coverage reports..."
+        pytest --cov=app --cov-report=html --cov-report=xml --cov-report=term-missing tests/ || true
+        
+        # Generate coverage badge
+        coverage-badge -o coverage.svg -f || echo "Badge generation failed"
+
+    - name: Create consolidated coverage report directory
+      run: |
+        mkdir -p consolidated-coverage-reports
+        
+        # Copy main backend HTML coverage report
+        if [ -d backend/htmlcov ]; then
+          cp -r backend/htmlcov consolidated-coverage-reports/backend-coverage-html
+        fi
+        
+        # Copy backend XML coverage report
+        if [ -f backend/coverage.xml ]; then
+          cp backend/coverage.xml consolidated-coverage-reports/backend-coverage.xml
+        fi
+        
+        # Copy coverage badge
+        if [ -f backend/coverage.svg ]; then
+          cp backend/coverage.svg consolidated-coverage-reports/coverage-badge.svg
+        fi
+        
+        # Create coverage summary
+        cat > consolidated-coverage-reports/README.md << 'EOF'
+        # 📊 Test Coverage Reports - ML Project
+        
+        Este diretório contém os relatórios de cobertura de testes gerados automaticamente pelo pipeline CI/CD.
+        
+        ## 📁 Conteúdo dos Artefatos
+        
+        ### 📄 Relatórios Principais
+        - **`backend-coverage-html/`** - Relatório HTML interativo da cobertura do backend
+        - **`backend-coverage.xml`** - Relatório XML da cobertura (compatível com ferramentas de análise)
+        - **`coverage-badge.svg`** - Badge de cobertura para documentação
+        
+        ### 🔍 Como Usar os Relatórios
+        
+        #### 1. Relatório HTML (Recomendado)
+        - Navegue até `backend-coverage-html/index.html`
+        - Abra o arquivo em um navegador web
+        - Explore a cobertura por módulo, arquivo e linha
+        - Identifique áreas que precisam de mais testes
+        
+        #### 2. Relatório XML
+        - Use para integração com ferramentas de análise
+        - Compatible com SonarQube, IDEs e outras ferramentas
+        
+        #### 3. Badge de Cobertura
+        - Use em README.md ou documentação
+        - Mostra percentual atual de cobertura
+        
+        ## 🎯 Metas de Cobertura
+        
+        - **Meta Mínima**: 80% de cobertura geral
+        - **Meta Ideal**: 90%+ para módulos críticos
+        - **Módulos Prioritários**: auth, db, api routes
+        
+        ## 📈 Melhorias Contínuas
+        
+        1. **Identifique lacunas**: Use o relatório HTML para encontrar linhas não cobertas
+        2. **Priorize módulos críticos**: Foque em componentes de alta importância
+        3. **Monitore tendências**: Compare com relatórios anteriores
+        4. **Automatize alertas**: Configure alertas para quedas de cobertura
+        
+        ## 🔗 Links Úteis
+        
+        - [Codecov Dashboard](https://codecov.io/gh/aluiziorenato/ml_project)
+        - [GitHub Actions - Pipeline CI/CD](../../actions)
+        - [Documentação de Testes](../../../checklist_testes.md)
+        
+        ---
+        
+        **Gerado automaticamente em**: $(date)
+        **Commit**: ${{ github.sha }}
+        **Branch**: ${{ github.ref_name }}
+        EOF
+
+    - name: Upload comprehensive coverage reports as artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports-${{ github.run_number }}
+        path: consolidated-coverage-reports/
+        retention-days: 30
+
+    - name: Upload coverage reports (latest)
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports-latest
+        path: consolidated-coverage-reports/
+        retention-days: 7
+
+    - name: Generate coverage summary for PR comment
+      id: coverage-summary
+      run: |
+        echo "📊 Extracting coverage metrics..."
+        
+        # Extract coverage percentage from backend
+        BACKEND_COVERAGE="N/A"
+        if [ -f backend/coverage.xml ]; then
+          BACKEND_COVERAGE=$(python -c "
+        import xml.etree.ElementTree as ET
+        try:
+            tree = ET.parse('backend/coverage.xml')
+            root = tree.getroot()
+            coverage = root.find('.//coverage')
+            if coverage is not None:
+                line_rate = float(coverage.get('line-rate', 0))
+                print(f'{line_rate:.1%}')
+            else:
+                print('N/A')
+        except:
+            print('N/A')
+        " 2>/dev/null || echo "N/A")
+        fi
+        
+        echo "backend_coverage=$BACKEND_COVERAGE" >> $GITHUB_OUTPUT
+        echo "📊 Backend Coverage: $BACKEND_COVERAGE"
+
+    - name: Comment PR with coverage summary
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v6
       with:
         script: |
+          const backendCoverage = '${{ steps.coverage-summary.outputs.backend_coverage }}';
+          
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: `📊 **Coverage Report**
+            body: `## 📊 Relatório de Cobertura de Testes
             
-            | Module | Coverage | Status |
-            |--------|----------|--------|
-            | Backend | [![Backend](https://img.shields.io/badge/Backend-85%25-green)]() | ✅ |
-            | Simulator Service | [![Simulator](https://img.shields.io/badge/Simulator-80%25-green)]() | ✅ |
-            | Learning Service | [![Learning](https://img.shields.io/badge/Learning-82%25-green)]() | ✅ |
-            | Optimizer AI | [![Optimizer](https://img.shields.io/badge/Optimizer-75%25-yellow)]() | ⚠️ |
-            | Discount Campaign Scheduler | [![Discount](https://img.shields.io/badge/Discount-90%25-green)]() | ✅ |
-            | Campaign Automation | [![Campaign](https://img.shields.io/badge/Campaign-70%25-yellow)]() | ⚠️ |
-            | Frontend | [![Frontend](https://img.shields.io/badge/Frontend-65%25-yellow)]() | ⚠️ |
-            | Main Tests | [![Main](https://img.shields.io/badge/Main-85%25-green)]() | ✅ |
+            ### 🎯 Cobertura por Módulo
             
-            ✅ All lint checks passed
-            🔒 Security scan completed
-            🏗️ Build process successful
+            | Módulo | Cobertura | Status | Artefato |
+            |--------|-----------|--------|----------|
+            | **Backend Principal** | ${backendCoverage} | ${backendCoverage !== 'N/A' && parseFloat(backendCoverage) >= 80 ? '✅' : '⚠️'} | [📊 Relatório HTML](../../actions/runs/${{ github.run_id }}) |
+            | **Codecov Integração** | [🔗 Dashboard](https://codecov.io/gh/${context.repo.owner}/${context.repo.repo}) | 🔄 | Automático |
             
-            **Next Steps:**
-            - Improve coverage for modules below 80%
-            - Review security scan results
-            - Monitor deployment status
+            ### 📁 Artefatos Disponíveis
             
-            Check the [Actions tab](../../actions) for detailed coverage reports.`
+            Os seguintes relatórios foram gerados e estão disponíveis para download:
+            
+            - **📊 Relatório HTML Interativo** - Visualização detalhada da cobertura
+            - **📄 Relatório XML** - Para integração com ferramentas de análise  
+            - **🏆 Badge de Cobertura** - Para uso em documentação
+            
+            ### 🔍 Como Acessar os Relatórios
+            
+            1. **Vá até a aba [Actions](../../actions)**
+            2. **Clique na execução atual do workflow**
+            3. **Na seção "Artifacts", baixe "coverage-reports-latest"**
+            4. **Extraia o arquivo e abra "backend-coverage-html/index.html"**
+            
+            ### 🎯 Próximos Passos
+            
+            ${backendCoverage !== 'N/A' && parseFloat(backendCoverage) < 80 ? 
+              '⚠️ **Atenção**: Cobertura abaixo de 80%. Considere adicionar mais testes.' : 
+              '✅ **Excelente**: Cobertura dentro da meta estabelecida.'}
+            
+            - 🔍 Revisar áreas não cobertas no relatório HTML
+            - 📝 Adicionar testes para módulos críticos
+            - 📈 Monitorar tendências de cobertura
+            
+            ---
+            
+            📚 **Documentação**: [Checklist de Testes](../../../blob/main/checklist_testes.md) | 🤖 **Gerado automaticamente pelo CI/CD**`
           })
 
   # ==========================================

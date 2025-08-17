@@ -668,13 +668,14 @@ class TestImports:
 ### **12. Relatórios de Cobertura**
 
 #### ✅ Checklist de Implementação
-- [ ] **HTML Reports**: Relatórios visuais detalhados
-- [ ] **Terminal Reports**: Resumo em linha de comando
-- [ ] **CI/CD Integration**: Coverage badges e enforcement
-- [ ] **Historical Tracking**: Evolução da cobertura
-- [ ] **Branch Coverage**: Cobertura de branches
+- [x] **HTML Reports**: Relatórios visuais detalhados ✅
+- [x] **Terminal Reports**: Resumo em linha de comando ✅
+- [x] **CI/CD Integration**: Coverage badges e enforcement ✅
+- [x] **Automated Artifacts**: Upload automático de relatórios como artefatos ✅
+- [x] **Historical Tracking**: Evolução da cobertura via Codecov ✅
+- [x] **Branch Coverage**: Cobertura de branches ✅
 
-#### 🔧 Comandos
+#### 🔧 Comandos Locais
 ```bash
 # Gerar relatórios completos
 pytest --cov=app --cov-report=html --cov-report=term --cov-report=xml
@@ -694,6 +695,29 @@ open htmlcov/index.html
 # Relatório por módulo
 pytest --cov=app --cov-report=term-missing | grep -E "^app/"
 ```
+
+#### 🤖 Artefatos Automáticos do CI/CD
+
+**Novidade**: O pipeline CI/CD agora gera automaticamente artefatos de cobertura para fácil acesso da equipe!
+
+**Artefatos Disponíveis**:
+- **📊 `coverage-reports-latest`** - Relatórios consolidados da última execução
+- **📄 `backend-coverage-{run}`** - Relatórios específicos do backend
+- **🔧 `backend-integration-coverage-{run}`** - Cobertura dos testes de integração
+
+**Como Acessar**:
+1. Vá para [GitHub Actions](../../actions)
+2. Clique na execução do workflow desejada
+3. Na seção "Artifacts", baixe o relatório desejado
+4. Extraia e abra `backend-coverage-html/index.html`
+
+**Documentação Completa**: [📖 Guia de Artefatos de Cobertura](docs/coverage-artifacts-guide.md)
+
+**Recursos Automáticos**:
+- ✅ Comentários automáticos em PRs com resumo de cobertura
+- ✅ Badge de cobertura atualizado automaticamente
+- ✅ Alertas quando cobertura cai abaixo de 80%
+- ✅ Retenção de 30 dias para relatórios históricos
 
 ---
 
