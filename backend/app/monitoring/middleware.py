@@ -3,7 +3,7 @@ Monitoring middleware for automatic metrics collection
 """
 
 from fastapi import Request, Response
-from fastapi.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import time
 from typing import Callable
 
