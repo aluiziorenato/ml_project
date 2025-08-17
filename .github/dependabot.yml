@@ -1,0 +1,170 @@
+# Dependabot configuration for automated dependency updates
+# Documentação: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Backend Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "aluiziorenato"
+    assignees:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(backend)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "security"
+
+  # Simulator Service Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/simulator_service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:30"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(simulator)"
+    labels:
+      - "dependencies"
+      - "simulator-service"
+
+  # Learning Service Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/learning_service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(learning)"
+    labels:
+      - "dependencies"
+      - "learning-service"
+
+  # Optimizer AI Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/optimizer_ai"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:30"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(optimizer)"
+    labels:
+      - "dependencies"
+      - "optimizer-ai"
+
+  # Discount Campaign Scheduler Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/discount_campaign_scheduler"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "11:00"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(discount)"
+    labels:
+      - "dependencies"
+      - "discount-scheduler"
+
+  # Campaign Automation Service Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/campaign_automation_service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "11:30"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(campaign)"
+    labels:
+      - "dependencies"
+      - "campaign-automation"
+
+  # Frontend Node.js dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(frontend)"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "javascript"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(docker)"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: "friday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(actions)"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automation"
+
+  # Modules dependencies (AI modules)
+  - package-ecosystem: "pip"
+    directory: "/modules"
+    schedule:
+      interval: "monthly"
+      day: "thursday"
+      time: "14:00"
+    open-pull-requests-limit: 2
+    reviewers:
+      - "aluiziorenato"
+    commit-message:
+      prefix: "deps(modules)"
+    labels:
+      - "dependencies"
+      - "ai-modules"
