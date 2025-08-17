@@ -1,0 +1,391 @@
+name: Security Scanning & Monitoring
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of security scan to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - dependencies
+        - secrets
+        - containers
+        - code
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "18"
+
+jobs:
+  # ==========================================
+  # DEPENDENCY VULNERABILITY SCANNING
+  # ==========================================
+  
+  dependency-scan:
+    name: 🔍 Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'dependencies' || github.event.inputs.scan_type == ''
+    
+    strategy:
+      matrix:
+        service: [
+          { name: "backend", path: "backend" },
+          { name: "simulator-service", path: "simulator_service" },
+          { name: "learning-service", path: "learning_service" },
+          { name: "optimizer-ai", path: "optimizer_ai" },
+          { name: "discount-scheduler", path: "discount_campaign_scheduler" },
+          { name: "campaign-automation", path: "campaign_automation_service" }
+        ]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety bandit semgrep
+
+    - name: Check for requirements file
+      id: check-reqs
+      run: |
+        if [ -f "${{ matrix.service.path }}/requirements.txt" ]; then
+          echo "has_requirements=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_requirements=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Safety check for known vulnerabilities
+      if: steps.check-reqs.outputs.has_requirements == 'true'
+      run: |
+        cd ${{ matrix.service.path }}
+        echo "🔍 Running Safety check for ${{ matrix.service.name }}..."
+        safety check --json --output safety-report.json || true
+        safety check || echo "⚠️ Vulnerabilities found in ${{ matrix.service.name }}"
+
+    - name: Bandit security linter
+      if: steps.check-reqs.outputs.has_requirements == 'true'
+      run: |
+        cd ${{ matrix.service.path }}
+        echo "🔍 Running Bandit security analysis for ${{ matrix.service.name }}..."
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . || echo "⚠️ Security issues found in ${{ matrix.service.name }}"
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always() && steps.check-reqs.outputs.has_requirements == 'true'
+      with:
+        name: security-reports-${{ matrix.service.name }}
+        path: |
+          ${{ matrix.service.path }}/safety-report.json
+          ${{ matrix.service.path }}/bandit-report.json
+        retention-days: 14
+
+  # ==========================================
+  # SECRET SCANNING
+  # ==========================================
+  
+  secret-scan:
+    name: 🔒 Secret Scanning
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'secrets' || github.event.inputs.scan_type == ''
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better secret detection
+
+    - name: Install TruffleHog
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+
+    - name: Run TruffleHog secret scan
+      run: |
+        echo "🔒 Scanning for secrets in repository..."
+        trufflehog git file://. --json --no-update > trufflehog-results.json || true
+        
+        # Check if any secrets were found
+        if [ -s trufflehog-results.json ]; then
+          echo "⚠️ Potential secrets found!"
+          echo "$(cat trufflehog-results.json | wc -l) potential secrets detected"
+        else
+          echo "✅ No secrets detected"
+        fi
+
+    - name: Upload secret scan results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: secret-scan-results
+        path: trufflehog-results.json
+        retention-days: 14
+
+  # ==========================================
+  # CONTAINER SECURITY SCANNING
+  # ==========================================
+  
+  container-scan:
+    name: 🐳 Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'containers' || github.event.inputs.scan_type == ''
+    
+    strategy:
+      matrix:
+        dockerfile: [
+          { name: "backend", path: "backend/Dockerfile" },
+          { name: "frontend", path: "frontend/Dockerfile" },
+          { name: "simulator-service", path: "simulator_service/Dockerfile" },
+          { name: "learning-service", path: "learning_service/Dockerfile" },
+          { name: "optimizer-ai", path: "optimizer_ai/Dockerfile" }
+        ]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check if Dockerfile exists
+      id: check-dockerfile
+      run: |
+        if [ -f "${{ matrix.dockerfile.path }}" ]; then
+          echo "has_dockerfile=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_dockerfile=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Dockerfile not found: ${{ matrix.dockerfile.path }}"
+        fi
+
+    - name: Set up Docker Buildx
+      if: steps.check-dockerfile.outputs.has_dockerfile == 'true'
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build container image for scanning
+      if: steps.check-dockerfile.outputs.has_dockerfile == 'true'
+      run: |
+        echo "🐳 Building container image for ${{ matrix.dockerfile.name }}..."
+        docker build -f ${{ matrix.dockerfile.path }} -t security-scan-${{ matrix.dockerfile.name }}:latest $(dirname ${{ matrix.dockerfile.path }}) || echo "⚠️ Build failed for ${{ matrix.dockerfile.name }}"
+
+    - name: Run Trivy vulnerability scanner on container
+      if: steps.check-dockerfile.outputs.has_dockerfile == 'true'
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'security-scan-${{ matrix.dockerfile.name }}:latest'
+        format: 'sarif'
+        output: 'trivy-${{ matrix.dockerfile.name }}-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always() && steps.check-dockerfile.outputs.has_dockerfile == 'true'
+      with:
+        sarif_file: 'trivy-${{ matrix.dockerfile.name }}-results.sarif'
+
+  # ==========================================
+  # CODE SECURITY ANALYSIS
+  # ==========================================
+  
+  code-security-scan:
+    name: 📝 Code Security Analysis
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'code' || github.event.inputs.scan_type == ''
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: python, javascript
+        queries: security-and-quality
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:python,javascript"
+
+  # ==========================================
+  # FRONTEND SECURITY SCAN
+  # ==========================================
+  
+  frontend-security:
+    name: 🌐 Frontend Security Scan
+    runs-on: ubuntu-latest
+    if: github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'dependencies' || github.event.inputs.scan_type == ''
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Check for package.json
+      id: check-package
+      run: |
+        if [ -f "frontend/package.json" ]; then
+          echo "has_package_json=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_package_json=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Install dependencies
+      if: steps.check-package.outputs.has_package_json == 'true'
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run npm audit
+      if: steps.check-package.outputs.has_package_json == 'true'
+      run: |
+        cd frontend
+        echo "🔍 Running npm audit for frontend..."
+        npm audit --json > npm-audit-report.json || true
+        npm audit || echo "⚠️ npm audit found vulnerabilities"
+
+    - name: Upload npm audit results
+      uses: actions/upload-artifact@v3
+      if: always() && steps.check-package.outputs.has_package_json == 'true'
+      with:
+        name: npm-audit-results
+        path: frontend/npm-audit-report.json
+        retention-days: 14
+
+  # ==========================================
+  # SECURITY SUMMARY & NOTIFICATIONS
+  # ==========================================
+  
+  security-summary:
+    name: 📊 Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, secret-scan, container-scan, code-security-scan, frontend-security]
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all security artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: security-reports
+      continue-on-error: true
+
+    - name: Generate security summary
+      run: |
+        echo "📊 Generating security summary..."
+        
+        SUMMARY_FILE="security-summary.md"
+        
+        cat > $SUMMARY_FILE << 'EOF'
+        # 🔒 Security Scan Summary
+        
+        **Scan Date**: $(date)
+        **Repository**: ${{ github.repository }}
+        **Branch**: ${{ github.ref_name }}
+        **Commit**: ${{ github.sha }}
+        
+        ## 📋 Scan Results Overview
+        
+        | Scan Type | Status | Details |
+        |-----------|--------|---------|
+        | 🔍 Dependency Vulnerabilities | ${{ needs.dependency-scan.result }} | Check artifacts for detailed reports |
+        | 🔒 Secret Scanning | ${{ needs.secret-scan.result }} | TruffleHog scan completed |
+        | 🐳 Container Security | ${{ needs.container-scan.result }} | Trivy container scanning |
+        | 📝 Code Security Analysis | ${{ needs.code-security-scan.result }} | CodeQL security analysis |
+        | 🌐 Frontend Security | ${{ needs.frontend-security.result }} | npm audit results |
+        
+        ## 🎯 Action Items
+        
+        EOF
+        
+        # Check for specific issues and add recommendations
+        if [ "${{ needs.dependency-scan.result }}" != "success" ]; then
+          echo "- ⚠️ **Dependencies**: Review dependency scan results and update vulnerable packages" >> $SUMMARY_FILE
+        fi
+        
+        if [ "${{ needs.secret-scan.result }}" != "success" ]; then
+          echo "- 🔒 **Secrets**: Review secret scan results and remove any exposed credentials" >> $SUMMARY_FILE
+        fi
+        
+        if [ "${{ needs.container-scan.result }}" != "success" ]; then
+          echo "- 🐳 **Containers**: Review container scan results and update base images" >> $SUMMARY_FILE
+        fi
+        
+        echo "" >> $SUMMARY_FILE
+        echo "## 📁 Available Reports" >> $SUMMARY_FILE
+        echo "" >> $SUMMARY_FILE
+        echo "Download the security artifacts from this workflow run to access detailed reports:" >> $SUMMARY_FILE
+        echo "" >> $SUMMARY_FILE
+        echo "- **Dependency Reports**: safety and bandit analysis results" >> $SUMMARY_FILE
+        echo "- **Secret Scan**: TruffleHog results" >> $SUMMARY_FILE
+        echo "- **Container Security**: Trivy SARIF reports" >> $SUMMARY_FILE
+        echo "- **Frontend Security**: npm audit results" >> $SUMMARY_FILE
+        echo "" >> $SUMMARY_FILE
+        echo "## 🔧 Remediation Guide" >> $SUMMARY_FILE
+        echo "" >> $SUMMARY_FILE
+        echo "1. **Review SARIF uploads** in the Security tab of this repository" >> $SUMMARY_FILE
+        echo "2. **Download artifacts** from this workflow run for detailed analysis" >> $SUMMARY_FILE
+        echo "3. **Update dependencies** using Dependabot PRs or manual updates" >> $SUMMARY_FILE
+        echo "4. **Fix code issues** identified by CodeQL and Bandit" >> $SUMMARY_FILE
+        echo "5. **Monitor alerts** in the repository's Security tab" >> $SUMMARY_FILE
+        
+        cat $SUMMARY_FILE
+
+    - name: Upload security summary
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-summary
+        path: security-summary.md
+        retention-days: 30
+
+    - name: Comment on PR with security summary
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const summaryContent = fs.readFileSync('security-summary.md', 'utf8');
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## 🔒 Security Scan Results\n\n${summaryContent}\n\n---\n\n🤖 **Automated Security Report** | [View Full Results](${context.payload.pull_request.html_url}/checks)`
+          })
+
+    - name: Send security alert on failures
+      if: |
+        needs.dependency-scan.result == 'failure' || 
+        needs.secret-scan.result == 'failure' || 
+        needs.container-scan.result == 'failure' ||
+        needs.code-security-scan.result == 'failure'
+      run: |
+        echo "🚨 Security scan failures detected!"
+        echo "Dependency Scan: ${{ needs.dependency-scan.result }}"
+        echo "Secret Scan: ${{ needs.secret-scan.result }}"
+        echo "Container Scan: ${{ needs.container-scan.result }}"
+        echo "Code Security Scan: ${{ needs.code-security-scan.result }}"
+        echo "Frontend Security: ${{ needs.frontend-security.result }}"
+        
+        # In a real environment, you would send notifications here
+        # Example: Slack alert, email notification, etc.
+        echo "📧 Security team should be notified of these failures"
