@@ -6,7 +6,7 @@ pytest-mock==3.11.1
 pytest-xdist==3.3.1
 
 # Performance and benchmarking
-pytest-benchmark==4.0.0
+pytest-benchmark==5.1.0
 
 # HTTP mocking and async responses
 aioresponses==0.7.8
