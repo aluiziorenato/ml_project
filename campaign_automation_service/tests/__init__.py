@@ -1,5 +1,5 @@
 """
-Optimizer AI Tests
+Campaign Automation Service Tests
 
 Test Categories
 ===============
@@ -10,29 +10,30 @@ Unit Tests (@pytest.mark.unit)
 - Utility functions
 - Validators and parsers
 
-Integration Tests (@pytest.mark.integration)
-- API endpoint testing
-- Service integration tests
-- External service mocking
+Database Tests (@pytest.mark.database)
+- SQLAlchemy model testing
+- Database operations
+- Relationship testing
 
 Model Tests (@pytest.mark.models)
 - Pydantic model validation
+- Enum validation
 - Serialization/deserialization
-- Model creation and validation
+
+Automation Tests (@pytest.mark.automation)
+- Campaign automation logic
+- Workflow testing
+- Scheduling functions
+
+API Tests (@pytest.mark.api)
+- FastAPI endpoint testing
+- Request/response validation
+- Authentication testing
 
 Utility Tests (@pytest.mark.utils)
 - Helper functions
 - Formatters
-- Text processing functions
-
-Validator Tests (@pytest.mark.validators)
-- Input validation functions
-- Compliance checking
-- Data validation
-
-Parser Tests (@pytest.mark.parsers)
-- Text parsing functions
-- Data transformation functions
+- Data processing functions
 
 Error Tests (@pytest.mark.errors)
 - Exception handling
