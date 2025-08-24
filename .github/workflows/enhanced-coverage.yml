@@ -1,0 +1,455 @@
+name: Enhanced Coverage Reports and Artifacts
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/enhanced-coverage.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/enhanced-coverage.yml'
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # ==================================================
+  # COMPREHENSIVE TESTING WITH COVERAGE
+  # ==================================================
+  test-with-coverage:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for better coverage analysis
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-coverage-${{ hashFiles('backend/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-coverage-
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-asyncio pytest-mock pytest-html pytest-json-report
+        pip install coverage[toml] httpx aioresponses psutil email-validator
+
+    - name: Set up environment variables
+      working-directory: ./backend
+      run: |
+        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_db" >> .env
+        echo "SECRET_KEY=test-secret-key-for-coverage-testing" >> .env
+        echo "ADMIN_EMAIL=admin@test.com" >> .env
+        echo "ADMIN_PASSWORD=testpassword123" >> .env
+
+    # ==================================================
+    # RUN PROMETHEUS/GRAFANA INTEGRATION TESTS
+    # ==================================================
+    - name: Run Prometheus/Grafana Integration Tests
+      working-directory: ./backend
+      run: |
+        echo "🧪 Running Prometheus/Grafana Integration Tests..."
+        python test_integration_runner.py
+      continue-on-error: true  # Don't fail the build if these are experimental
+
+    - name: Run integration tests with coverage
+      working-directory: ./backend
+      run: |
+        echo "🧪 Running integration tests with coverage..."
+        python -m pytest tests/integration/ \
+          --cov=app \
+          --cov-report=html:htmlcov/integration \
+          --cov-report=xml:coverage-integration.xml \
+          --cov-report=term-missing \
+          --cov-report=json:coverage-integration.json \
+          --html=reports/integration-report.html \
+          --self-contained-html \
+          --json-report --json-report-file=reports/integration-report.json \
+          -v \
+          --tb=short \
+          --maxfail=10
+      continue-on-error: true
+
+    # ==================================================
+    # RUN COMPREHENSIVE TEST SUITE WITH COVERAGE
+    # ==================================================
+    - name: Run comprehensive test suite with coverage
+      working-directory: ./backend
+      run: |
+        echo "🧪 Running comprehensive test suite..."
+        
+        # Create reports directory
+        mkdir -p reports htmlcov
+        
+        # Run all tests with comprehensive coverage
+        python -m pytest tests/ \
+          --cov=app \
+          --cov-report=html:htmlcov/comprehensive \
+          --cov-report=xml:coverage-comprehensive.xml \
+          --cov-report=term-missing \
+          --cov-report=json:coverage-comprehensive.json \
+          --html=reports/comprehensive-report.html \
+          --self-contained-html \
+          --json-report --json-report-file=reports/comprehensive-report.json \
+          -v \
+          --tb=short \
+          --maxfail=20 \
+          --durations=10
+      continue-on-error: false
+
+    # ==================================================
+    # GENERATE DETAILED COVERAGE REPORTS
+    # ==================================================
+    - name: Generate detailed coverage analysis
+      working-directory: ./backend
+      run: |
+        echo "📊 Generating detailed coverage analysis..."
+        
+        # Create combined coverage report
+        coverage combine || true
+        
+        # Generate multiple output formats
+        coverage html -d htmlcov/combined --title="ML Project Backend Coverage Report"
+        coverage xml -o coverage-combined.xml
+        coverage json -o coverage-combined.json
+        
+        # Generate coverage badge
+        coverage-badge -o htmlcov/coverage-badge.svg || echo "Coverage badge generation skipped"
+        
+        # Generate coverage summary
+        coverage report --format=markdown > reports/coverage-summary.md || true
+        coverage report > reports/coverage-summary.txt
+        
+        # Create coverage statistics file
+        cat > reports/coverage-stats.json << EOF
+        {
+          "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "branch": "${{ github.ref_name }}",
+          "commit": "${{ github.sha }}",
+          "pull_request": "${{ github.event.number }}",
+          "coverage_files": [
+            "coverage-comprehensive.xml",
+            "coverage-integration.xml", 
+            "coverage-combined.xml"
+          ],
+          "html_reports": [
+            "htmlcov/comprehensive/",
+            "htmlcov/integration/",
+            "htmlcov/combined/"
+          ]
+        }
+        EOF
+        
+        echo "✅ Coverage analysis complete"
+
+    # ==================================================
+    # CREATE COMPREHENSIVE COVERAGE ARTIFACT
+    # ==================================================
+    - name: Create coverage artifact structure
+      working-directory: ./backend
+      run: |
+        echo "📦 Creating coverage artifact structure..."
+        
+        # Create artifact directory
+        mkdir -p coverage-artifact
+        
+        # Copy all coverage files
+        cp -r htmlcov coverage-artifact/ || true
+        cp -r reports coverage-artifact/ || true
+        cp coverage*.xml coverage-artifact/ || true
+        cp coverage*.json coverage-artifact/ || true
+        
+        # Create index.html for easy navigation
+        cat > coverage-artifact/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>ML Project - Coverage Reports</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; }
+                h1 { color: #333; }
+                .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+                .link { display: block; margin: 10px 0; padding: 10px; background: #f5f5f5; text-decoration: none; color: #333; border-radius: 3px; }
+                .link:hover { background: #e0e0e0; }
+                .stats { background: #e8f4fd; }
+                .integration { background: #fff2e8; }
+                .comprehensive { background: #e8f8e8; }
+            </style>
+        </head>
+        <body>
+            <h1>🧪 ML Project Backend - Coverage Reports</h1>
+            
+            <div class="section stats">
+                <h2>📊 Coverage Statistics</h2>
+                <a href="reports/coverage-summary.txt" class="link">📄 Coverage Summary (Text)</a>
+                <a href="reports/coverage-summary.md" class="link">📄 Coverage Summary (Markdown)</a>
+                <a href="coverage-combined.json" class="link">📊 Coverage Data (JSON)</a>
+                <a href="coverage-combined.xml" class="link">📊 Coverage Data (XML)</a>
+            </div>
+            
+            <div class="section comprehensive">
+                <h2>🔍 Comprehensive Test Coverage</h2>
+                <a href="htmlcov/comprehensive/index.html" class="link">📋 Comprehensive Coverage Report</a>
+                <a href="reports/comprehensive-report.html" class="link">🧪 Comprehensive Test Report</a>
+                <a href="coverage-comprehensive.xml" class="link">📊 Comprehensive Coverage (XML)</a>
+            </div>
+            
+            <div class="section integration">
+                <h2>🔗 Integration Test Coverage</h2>
+                <a href="htmlcov/integration/index.html" class="link">📋 Integration Coverage Report</a>
+                <a href="reports/integration-report.html" class="link">🧪 Integration Test Report</a>
+                <a href="coverage-integration.xml" class="link">📊 Integration Coverage (XML)</a>
+            </div>
+            
+            <div class="section">
+                <h2>📈 Combined Analysis</h2>
+                <a href="htmlcov/combined/index.html" class="link">📋 Combined Coverage Report</a>
+                <a href="reports/coverage-stats.json" class="link">📊 Coverage Statistics</a>
+            </div>
+            
+            <hr>
+            <p><small>Generated on: $(date) | Branch: ${{ github.ref_name }} | Commit: ${{ github.sha }}</small></p>
+        </body>
+        </html>
+        EOF
+        
+        # List artifact contents
+        echo "📁 Coverage artifact contents:"
+        find coverage-artifact -type f | sort
+
+    # ==================================================
+    # UPLOAD COVERAGE ARTIFACTS
+    # ==================================================
+    - name: Upload comprehensive coverage artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports-${{ github.run_number }}
+        path: backend/coverage-artifact/
+        retention-days: 30
+
+    - name: Upload integration test coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: integration-coverage-${{ github.run_number }}
+        path: |
+          backend/htmlcov/integration/
+          backend/coverage-integration.xml
+          backend/reports/integration-report.html
+        retention-days: 15
+
+    # ==================================================
+    # CODECOV INTEGRATION
+    # ==================================================
+    - name: Upload to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./backend/coverage-comprehensive.xml,./backend/coverage-integration.xml
+        directory: ./backend
+        flags: backend,integration,comprehensive
+        name: backend-comprehensive-coverage
+        fail_ci_if_error: false
+        verbose: true
+
+    # ==================================================
+    # GENERATE COVERAGE COMMENT FOR PR
+    # ==================================================
+    - name: Coverage comment for PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            // Read coverage summary
+            const coverageSummary = fs.readFileSync('./backend/reports/coverage-summary.txt', 'utf8');
+            const coverageLines = coverageSummary.split('\n').slice(0, 10); // First 10 lines
+            
+            // Read coverage stats
+            let statsData = {};
+            try {
+              statsData = JSON.parse(fs.readFileSync('./backend/reports/coverage-stats.json', 'utf8'));
+            } catch (e) {
+              console.log('Could not read coverage stats');
+            }
+            
+            const comment = `## 📊 Coverage Report
+            
+            ### 🧪 Test Results Summary
+            - **Integration Tests**: Prometheus/Grafana integration validation
+            - **Comprehensive Tests**: Full backend test suite
+            - **Artifact**: \`coverage-reports-${{ github.run_number }}\`
+            
+            ### 📈 Coverage Details
+            \`\`\`
+            ${coverageLines.join('\n')}
+            \`\`\`
+            
+            ### 🔗 Coverage Reports Available
+            - 📋 [Comprehensive Coverage Report](../actions/runs/${{ github.run_id }}/artifacts)
+            - 🔍 [Integration Test Coverage](../actions/runs/${{ github.run_id }}/artifacts)
+            - 📊 [Combined Analysis](../actions/runs/${{ github.run_id }}/artifacts)
+            
+            ### 📦 Artifacts
+            - \`coverage-reports-${{ github.run_number }}\` - Complete coverage reports (30 days)
+            - \`integration-coverage-${{ github.run_number }}\` - Integration test coverage (15 days)
+            
+            ---
+            
+            **Generated**: \`${new Date().toISOString()}\`
+            **Branch**: \`${{ github.ref_name }}\`
+            **Commit**: \`${{ github.sha }}\`
+            
+            📥 Download artifacts from the [Actions tab](../actions/runs/${{ github.run_id }}) to view detailed HTML reports.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Error creating coverage comment:', error);
+          }
+
+    # ==================================================
+    # MONITORING AND ALERTS TESTING
+    # ==================================================
+    - name: Test monitoring endpoints
+      working-directory: ./backend
+      run: |
+        echo "🔍 Testing monitoring endpoints..."
+        
+        # Start the application in background for endpoint testing
+        echo "DATABASE_URL=sqlite:///./test.db" > .env.test
+        
+        # Test prometheus metrics generation
+        python -c "
+        from app.monitoring.prometheus_metrics import get_metrics, update_system_metrics
+        update_system_metrics()
+        metrics = get_metrics()
+        print(f'Generated {len(metrics)} bytes of metrics')
+        
+        # Test metrics parsing
+        from prometheus_client.parser import text_string_to_metric_families
+        families = list(text_string_to_metric_families(metrics.decode('utf-8')))
+        print(f'Parsed {len(families)} metric families')
+        
+        # Report key metrics
+        for family in families:
+            if 'system_' in family.name:
+                print(f'System metric: {family.name} - {len(family.samples)} samples')
+        "
+        
+        echo "✅ Monitoring endpoints test complete"
+
+    # ==================================================
+    # CLEANUP AND SUMMARY
+    # ==================================================
+    - name: Test execution summary
+      run: |
+        echo "🎉 Enhanced Coverage Pipeline Complete!"
+        echo ""
+        echo "📊 Coverage Reports Generated:"
+        echo "  - Comprehensive test coverage"
+        echo "  - Integration test coverage" 
+        echo "  - Combined coverage analysis"
+        echo "  - Prometheus/Grafana integration validation"
+        echo ""
+        echo "📦 Artifacts Available:"
+        echo "  - coverage-reports-${{ github.run_number }}"
+        echo "  - integration-coverage-${{ github.run_number }}"
+        echo ""
+        echo "🔗 View artifacts at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+# ==================================================
+# COVERAGE TREND ANALYSIS JOB
+# ==================================================
+  coverage-trend-analysis:
+    runs-on: ubuntu-latest
+    needs: test-with-coverage
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 100  # Fetch more history for trend analysis
+    
+    - name: Download coverage artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: coverage-reports-${{ github.run_number }}
+        path: coverage-data
+    
+    - name: Coverage trend analysis
+      run: |
+        echo "📈 Analyzing coverage trends..."
+        
+        # This is a placeholder for coverage trend analysis
+        # In a real implementation, you might:
+        # 1. Compare with previous coverage reports
+        # 2. Generate trend charts
+        # 3. Set up alerts for coverage drops
+        # 4. Store historical coverage data
+        
+        if [ -f "coverage-data/coverage-combined.json" ]; then
+          echo "✅ Coverage data available for trend analysis"
+          
+          # Extract coverage percentage
+          python3 -c "
+          import json
+          try:
+              with open('coverage-data/coverage-combined.json') as f:
+                  data = json.load(f)
+              percent = data.get('totals', {}).get('percent_covered', 0)
+              print(f'Current coverage: {percent:.2f}%')
+              
+              # Save to a trend file (in real implementation, this would be stored somewhere persistent)
+              trend_data = {
+                  'timestamp': '$(date -u +%Y-%m-%dT%H:%M:%SZ)',
+                  'commit': '${{ github.sha }}',
+                  'coverage_percent': percent
+              }
+              
+              with open('coverage-trend.json', 'w') as f:
+                  json.dump(trend_data, f)
+              
+              print(f'✅ Coverage trend data saved')
+          except Exception as e:
+              print(f'Error processing coverage data: {e}')
+          "
+        else
+          echo "⚠️ Coverage data not found for trend analysis"
+        fi
