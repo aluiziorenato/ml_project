@@ -24,7 +24,7 @@ python-jose==3.5.0      # JWT e JWS com suporte a JOSE (JSON Object Signing and 
 passlib==1.7.4
 
 # File handling and environment
-python-dotenv==1.0.1
+python-dotenv==1.1.1
 python-multipart==0.0.20
 
 # Email validation
