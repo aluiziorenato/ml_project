@@ -19,7 +19,7 @@ passlib==1.7.4
 python-multipart==0.0.20
 
 # Task Scheduling & Background Jobs
-celery==5.3.4
+celery==5.5.3
 redis==5.2.1
 
 # Configuration & Environment
