@@ -151,14 +151,14 @@ jobs:
       continue-on-error: true
 
     - name: Upload HTML coverage report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report-html
         path: backend/htmlcov/
       if: always()
 
     - name: Upload pytest HTML report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pytest-report-html
         path: backend/reports/
@@ -172,7 +172,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload coverage badge
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-badge
         path: backend/coverage.svg
