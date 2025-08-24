@@ -27,7 +27,7 @@ python-dotenv==1.0.1
 
 # Data Processing & Analysis
 pandas==2.2.3
-numpy==1.26.4
+numpy==2.0.2
 scikit-learn==1.5.2
 
 # Date/Time handling
