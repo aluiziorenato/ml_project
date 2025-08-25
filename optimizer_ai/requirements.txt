@@ -8,6 +8,6 @@ nltk==3.9.1
 textstat==0.7.3
 python-jose[cryptography]==3.5.0
 python-dotenv==1.0.1
-transformers==4.47.1
+transformers==4.55.4
 torch==2.8.0
 scikit-learn==1.6.0
