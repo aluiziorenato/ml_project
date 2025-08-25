@@ -10,4 +10,4 @@ python-jose[cryptography]==3.5.0
 python-dotenv==1.0.1
 transformers==4.47.1
 torch==2.8.0
-scikit-learn==1.6.0
+scikit-learn==1.6.1
