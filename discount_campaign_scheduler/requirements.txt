@@ -7,7 +7,7 @@ pydantic-settings==2.6.1
 # Database & ORM
 sqlmodel>=0.0.22
 psycopg2-binary==2.9.10
-SQLAlchemy==2.0.36
+SQLAlchemy==2.0.43
 
 # HTTP Client for ML API integration
 httpx==0.28.1
