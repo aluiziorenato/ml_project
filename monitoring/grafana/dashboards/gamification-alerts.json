@@ -1,0 +1,374 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "🎮 Gamification & Alerts Dashboard",
+    "tags": ["gamification", "alerts", "ml-project"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Achievements Earned Over Time",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "increase(achievements_earned_total[1h])",
+            "refId": "A",
+            "legendFormat": "{{achievement_type}}"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": { "mode": "normal", "group": "A" },
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "axisColorMode": "text",
+              "scaleDistribution": { "type": "linear" },
+              "axisCenteredZero": false,
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "User Points Distribution",
+        "type": "histogram",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, user_points_distribution)",
+            "refId": "A",
+            "legendFormat": "95th Percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, user_points_distribution)",
+            "refId": "B",
+            "legendFormat": "Median"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "continuous-BlPu" },
+            "custom": {
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Active Alerts by Severity",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum by (severity) (alerts_triggered_total)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 6, "w": 8, "x": 0, "y": 8 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "mappings": [
+              {
+                "options": {
+                  "critical": { "color": "red", "index": 0 },
+                  "high": { "color": "orange", "index": 1 },
+                  "medium": { "color": "yellow", "index": 2 },
+                  "low": { "color": "green", "index": 3 }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 5 },
+                { "color": "orange", "value": 10 },
+                { "color": "red", "value": 20 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "text": { "titleSize": 16, "valueSize": 24 },
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Badges Awarded",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(badges_awarded_total)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 6, "w": 8, "x": 8, "y": 8 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "center",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "text": { "titleSize": 16, "valueSize": 36 },
+          "textMode": "value"
+        }
+      },
+      {
+        "id": 5,
+        "title": "Notification Success Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "rate(notifications_sent_total{status=\"sent\"}[5m]) / rate(notifications_sent_total[5m]) * 100",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 6, "w": 8, "x": 16, "y": 8 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 80 },
+                { "color": "green", "value": 95 }
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true,
+          "text": { "titleSize": 16, "valueSize": 24 }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Alert Response Time",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(alert_response_time_seconds_bucket[5m]))",
+            "refId": "A",
+            "legendFormat": "95th Percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(alert_response_time_seconds_bucket[5m]))",
+            "refId": "B",
+            "legendFormat": "Median"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "auto",
+              "pointSize": 5,
+              "stacking": { "mode": "none", "group": "A" },
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "axisColorMode": "text",
+              "scaleDistribution": { "type": "linear" },
+              "axisCenteredZero": false,
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Top Performing Users",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, sum by (user_id) (user_total_points))",
+            "refId": "A",
+            "format": "table"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "custom": {
+              "align": "auto",
+              "cellOptions": { "type": "auto" },
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "showHeader": true,
+          "cellHeight": "sm",
+          "footer": {
+            "show": false,
+            "reducer": ["sum"],
+            "countRows": false
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "ACOS Safety Margin Violations",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "increase(markup_safety_violations_total[1h])",
+            "refId": "A",
+            "legendFormat": "Safety Violations"
+          }
+        ],
+        "gridPos": { "h": 6, "w": 24, "x": 0, "y": 22 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "fixed", "fixedColor": "red" },
+            "custom": {
+              "drawStyle": "bars",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 1,
+              "fillOpacity": 80,
+              "gradientMode": "none",
+              "spanNulls": false,
+              "insertNulls": false,
+              "showPoints": "never",
+              "pointSize": 5,
+              "stacking": { "mode": "none", "group": "A" },
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "axisColorMode": "text",
+              "scaleDistribution": { "type": "linear" },
+              "axisCenteredZero": false,
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 1 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "legend": { "displayMode": "list", "placement": "bottom" },
+          "tooltip": { "mode": "single", "sort": "none" }
+        }
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "refresh": "10s"
+  }
+}

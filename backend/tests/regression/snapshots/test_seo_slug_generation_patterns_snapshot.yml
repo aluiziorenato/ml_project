@@ -1,0 +1,33 @@
+case_1:
+  length: 19
+  original: Simple Product Name
+  slug: simple-product-name
+case_2:
+  length: 31
+  original: Product With Special Characters!@#
+  slug: product-with-special-characters
+case_3:
+  length: 28
+  original: Product-with-hyphens-already
+  slug: product-with-hyphens-already
+case_4:
+  length: 24
+  original: Product_with_underscores
+  slug: product-with-underscores
+case_5:
+  length: 37
+  original: Product with números 123 and símbolos
+  slug: product-with-números-123-and-símbolos
+case_6:
+  length: 50
+  original: Very Long Product Name That Should Be Truncated Because It Exceeds Maximum
+    Length
+  slug: very-long-product-name-that-should-be-truncated-be
+case_7:
+  length: 23
+  original: Mixed CASE product Name
+  slug: mixed-case-product-name
+case_8:
+  length: 25
+  original: '   Product with extra spaces   '
+  slug: product-with-extra-spaces

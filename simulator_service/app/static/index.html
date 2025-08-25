@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Campanhas - Mercado Livre</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #3b82f6, #1e40af);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+        }
+        
+        .form-section, .results-section {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #10b981, #059669);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results {
+            display: none;
+        }
+        
+        .result-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-label {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .metric-value {
+            color: #059669;
+            font-weight: 700;
+        }
+        
+        .recommendations {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .recommendations h4 {
+            color: #92400e;
+            margin-bottom: 0.5rem;
+        }
+        
+        .recommendations ul {
+            list-style-type: none;
+        }
+        
+        .recommendations li {
+            color: #92400e;
+            margin-bottom: 0.3rem;
+            padding-left: 1rem;
+            position: relative;
+        }
+        
+        .recommendations li:before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #6b7280;
+        }
+        
+        .keywords-input {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Simulador de Campanhas</h1>
+            <p>Mercado Livre - Otimização de Vendas com IA</p>
+        </div>
+        
+        <div class="content">
+            <div class="form-section">
+                <h3>Configuração da Campanha</h3>
+                <form id="campaignForm">
+                    <div class="form-group">
+                        <label for="productName">Nome do Produto:</label>
+                        <input type="text" id="productName" name="productName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">Categoria:</label>
+                        <select id="category" name="category" required>
+                            <option value="">Selecione uma categoria</option>
+                            <option value="electronics">Eletrônicos</option>
+                            <option value="clothing">Roupas e Acessórios</option>
+                            <option value="home">Casa e Jardim</option>
+                            <option value="books">Livros</option>
+                            <option value="sports">Esportes</option>
+                            <option value="automotive">Automotivo</option>
+                            <option value="beauty">Beleza e Cuidado</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="budget">Orçamento (R$):</label>
+                        <input type="number" id="budget" name="budget" min="100" step="50" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="duration">Duração (dias):</label>
+                        <input type="number" id="duration" name="duration" min="1" max="90" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="targetAudience">Público-Alvo:</label>
+                        <select id="targetAudience" name="targetAudience" required>
+                            <option value="">Selecione o público</option>
+                            <option value="young_adults">Jovens Adultos (18-30)</option>
+                            <option value="adults">Adultos (31-50)</option>
+                            <option value="seniors">Mais de 50 anos</option>
+                            <option value="families">Famílias</option>
+                            <option value="professionals">Profissionais</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="keywords">Palavras-chave (uma por linha):</label>
+                        <textarea id="keywords" name="keywords" class="keywords-input" placeholder="Digite uma palavra-chave por linha&#10;Exemplo:&#10;smartphone&#10;celular&#10;android"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="simulateBtn">
+                        🎯 Simular Campanha
+                    </button>
+                </form>
+            </div>
+            
+            <div class="results-section">
+                <h3>Resultados da Simulação</h3>
+                <div id="loadingDiv" class="loading" style="display: none;">
+                    <p>🔄 Processando simulação...</p>
+                </div>
+                
+                <div id="resultsDiv" class="results">
+                    <div class="result-card">
+                        <h4>📊 Métricas Estimadas</h4>
+                        <div class="metric">
+                            <span class="metric-label">ID da Campanha:</span>
+                            <span class="metric-value" id="campaignId">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Alcance Estimado:</span>
+                            <span class="metric-value" id="estimatedReach">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Cliques Estimados:</span>
+                            <span class="metric-value" id="estimatedClicks">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Conversões Estimadas:</span>
+                            <span class="metric-value" id="estimatedConversions">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Receita Estimada:</span>
+                            <span class="metric-value" id="estimatedRevenue">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Custo por Clique:</span>
+                            <span class="metric-value" id="costPerClick">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">ROI:</span>
+                            <span class="metric-value" id="roiPercentage">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="recommendations" id="recommendationsDiv">
+                        <h4>💡 Recomendações</h4>
+                        <ul id="recommendationsList"></ul>
+                    </div>
+                </div>
+                
+                <div id="noResults" style="text-align: center; color: #6b7280; margin-top: 2rem;">
+                    <p>📈 Configure e execute uma simulação para ver os resultados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('campaignForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const keywords = formData.get('keywords').split('\n').filter(k => k.trim().length > 0);
+            
+            const requestData = {
+                product_name: formData.get('productName'),
+                category: formData.get('category'),
+                budget: parseFloat(formData.get('budget')),
+                duration_days: parseInt(formData.get('duration')),
+                target_audience: formData.get('targetAudience'),
+                keywords: keywords
+            };
+            
+            // Show loading
+            document.getElementById('loadingDiv').style.display = 'block';
+            document.getElementById('resultsDiv').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
+            document.getElementById('simulateBtn').disabled = true;
+            document.getElementById('simulateBtn').textContent = '🔄 Processando...';
+            
+            try {
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro na simulação');
+                }
+                
+                const results = await response.json();
+                displayResults(results);
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao processar simulação. Tente novamente.');
+            } finally {
+                document.getElementById('loadingDiv').style.display = 'none';
+                document.getElementById('simulateBtn').disabled = false;
+                document.getElementById('simulateBtn').textContent = '🎯 Simular Campanha';
+            }
+        });
+        
+        function displayResults(results) {
+            document.getElementById('campaignId').textContent = results.campaign_id;
+            document.getElementById('estimatedReach').textContent = results.estimated_reach.toLocaleString();
+            document.getElementById('estimatedClicks').textContent = results.estimated_clicks.toLocaleString();
+            document.getElementById('estimatedConversions').textContent = results.estimated_conversions.toLocaleString();
+            document.getElementById('estimatedRevenue').textContent = `R$ ${results.estimated_revenue.toLocaleString()}`;
+            document.getElementById('costPerClick').textContent = `R$ ${results.cost_per_click}`;
+            document.getElementById('roiPercentage').textContent = `${results.roi_percentage}%`;
+            
+            const recommendationsList = document.getElementById('recommendationsList');
+            recommendationsList.innerHTML = '';
+            results.recommendations.forEach(rec => {
+                const li = document.createElement('li');
+                li.textContent = rec;
+                recommendationsList.appendChild(li);
+            });
+            
+            document.getElementById('resultsDiv').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

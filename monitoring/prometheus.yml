@@ -1,0 +1,59 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/api/metrics/prometheus'
+    scrape_interval: 10s
+    authorization:
+      type: Bearer
+      credentials: 'change-this-metrics-key-in-production'
+
+  - job_name: 'simulator_service'
+    static_configs:
+      - targets: ['simulator_service:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'learning_service'
+    static_configs:
+      - targets: ['learning_service:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'optimizer_ai'
+    static_configs:
+      - targets: ['optimizer_ai:8003']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['db:5432']
+    scrape_interval: 30s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-lb:80']
+    scrape_interval: 30s

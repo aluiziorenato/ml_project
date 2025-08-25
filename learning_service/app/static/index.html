@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprendizado Contínuo - Mercado Livre</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #8b5cf6, #7c3aed);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+        }
+        
+        .form-section, .chart-section {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #e2e8f0;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: #8b5cf6;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #10b981, #059669);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-upload {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+        }
+        
+        .btn-upload:hover {
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+        }
+        
+        .file-upload {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        
+        .file-upload.dragover {
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #8b5cf6;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #8b5cf6;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+        
+        .success-message {
+            background: #dcfce7;
+            border: 1px solid #16a34a;
+            color: #15803d;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #ef4444;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Aprendizado Contínuo</h1>
+            <p>Mercado Livre - Machine Learning em Evolução</p>
+        </div>
+        
+        <div class="content">
+            <div class="form-section">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('manual')">Manual</button>
+                    <button class="tab" onclick="switchTab('upload')">Upload CSV</button>
+                </div>
+                
+                <div id="manual-tab" class="tab-content active">
+                    <h3>Atualização Manual do Modelo</h3>
+                    <form id="updateForm">
+                        <div class="form-group">
+                            <label for="campaignId">ID da Campanha:</label>
+                            <input type="text" id="campaignId" name="campaignId" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="actualClicks">Cliques Reais:</label>
+                                <input type="number" id="actualClicks" name="actualClicks" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="predictedClicks">Cliques Previstos:</label>
+                                <input type="number" id="predictedClicks" name="predictedClicks" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="actualConversions">Conversões Reais:</label>
+                                <input type="number" id="actualConversions" name="actualConversions" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="predictedConversions">Conversões Previstas:</label>
+                                <input type="number" id="predictedConversions" name="predictedConversions" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="actualRevenue">Receita Real (R$):</label>
+                                <input type="number" id="actualRevenue" name="actualRevenue" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="predictedRevenue">Receita Prevista (R$):</label>
+                                <input type="number" id="predictedRevenue" name="predictedRevenue" step="0.01" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="notes">Observações:</label>
+                            <textarea id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn">
+                            🔄 Atualizar Modelo
+                        </button>
+                    </form>
+                </div>
+                
+                <div id="upload-tab" class="tab-content">
+                    <h3>Upload de Resultados em Lote</h3>
+                    <div class="file-upload" id="fileUpload">
+                        <p>📁 Arraste um arquivo CSV aqui ou clique para selecionar</p>
+                        <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                        <button type="button" class="btn btn-upload" onclick="document.getElementById('csvFile').click()">
+                            📊 Selecionar Arquivo CSV
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top: 1rem; font-size: 0.9rem; color: #6b7280;">
+                        <p><strong>Formato esperado do CSV:</strong></p>
+                        <p>campaign_id, actual_clicks, actual_conversions, actual_revenue, predicted_clicks, predicted_conversions, predicted_revenue, notes</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-section">
+                <h3>Performance do Modelo</h3>
+                
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-value" id="overallAccuracy">-</div>
+                        <div class="metric-label">Precisão Geral</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalUpdates">-</div>
+                        <div class="metric-label">Total de Atualizações</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+                
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-value" id="clickAccuracy">-</div>
+                        <div class="metric-label">Precisão de Cliques</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="conversionAccuracy">-</div>
+                        <div class="metric-label">Precisão de Conversões</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="revenueAccuracy">-</div>
+                        <div class="metric-label">Precisão de Receita</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accuracyChart = null;
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('accuracyChart').getContext('2d');
+            accuracyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Precisão Geral',
+                        data: [],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load learning history and update chart
+        async function loadLearningHistory() {
+            try {
+                const response = await fetch('/api/learning-history');
+                const data = await response.json();
+                
+                const labels = data.history.map((_, index) => `Update ${index + 1}`);
+                const accuracyData = data.history.map(h => h.accuracy);
+                
+                accuracyChart.data.labels = labels;
+                accuracyChart.data.datasets[0].data = accuracyData;
+                accuracyChart.update();
+                
+                // Update metrics
+                document.getElementById('overallAccuracy').textContent = 
+                    (data.average_accuracy * 100).toFixed(1) + '%';
+                document.getElementById('totalUpdates').textContent = data.total_updates;
+                
+            } catch (error) {
+                console.error('Error loading learning history:', error);
+            }
+        }
+
+        // Load model performance
+        async function loadModelPerformance() {
+            try {
+                const response = await fetch('/api/model-performance');
+                const data = await response.json();
+                
+                if (data.current_performance) {
+                    document.getElementById('clickAccuracy').textContent = 
+                        (data.current_performance.click_accuracy * 100).toFixed(1) + '%';
+                    document.getElementById('conversionAccuracy').textContent = 
+                        (data.current_performance.conversion_accuracy * 100).toFixed(1) + '%';
+                    document.getElementById('revenueAccuracy').textContent = 
+                        (data.current_performance.revenue_accuracy * 100).toFixed(1) + '%';
+                }
+                
+            } catch (error) {
+                console.error('Error loading model performance:', error);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('updateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            const requestData = {
+                campaign_id: formData.get('campaignId'),
+                actual_clicks: parseInt(formData.get('actualClicks')),
+                actual_conversions: parseInt(formData.get('actualConversions')),
+                actual_revenue: parseFloat(formData.get('actualRevenue')),
+                predicted_clicks: parseInt(formData.get('predictedClicks')),
+                predicted_conversions: parseInt(formData.get('predictedConversions')),
+                predicted_revenue: parseFloat(formData.get('predictedRevenue')),
+                notes: formData.get('notes')
+            };
+            
+            try {
+                const response = await fetch('/api/update-model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro na atualização');
+                }
+                
+                const result = await response.json();
+                
+                // Show success message
+                showMessage('Modelo atualizado com sucesso!', 'success');
+                
+                // Reset form
+                e.target.reset();
+                
+                // Reload data
+                await loadLearningHistory();
+                await loadModelPerformance();
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showMessage('Erro ao atualizar modelo. Tente novamente.', 'error');
+            }
+        });
+
+        // Handle file upload
+        document.getElementById('csvFile').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/upload-results', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro no upload');
+                }
+                
+                const result = await response.json();
+                
+                showMessage(`Upload concluído! ${result.updates_processed} atualizações processadas.`, 'success');
+                
+                // Reload data
+                await loadLearningHistory();
+                await loadModelPerformance();
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showMessage('Erro no upload. Verifique o formato do arquivo.', 'error');
+            }
+        });
+
+        function showMessage(message, type) {
+            const existingMessage = document.querySelector('.success-message, .error-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `${type}-message`;
+            messageDiv.textContent = message;
+            
+            const formSection = document.querySelector('.form-section');
+            formSection.insertBefore(messageDiv, formSection.firstChild.nextSibling);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart();
+            loadLearningHistory();
+            loadModelPerformance();
+        });
+    </script>
+</body>
+</html>

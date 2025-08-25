@@ -1,0 +1,157 @@
+groups:
+  - name: ml_project_alerts
+    rules:
+      # System Health Alerts
+      - alert: HighCPUUsage
+        expr: system_cpu_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% for more than 5 minutes"
+
+      - alert: CriticalCPUUsage
+        expr: system_cpu_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Critical CPU usage detected"
+          description: "CPU usage is {{ $value }}% for more than 2 minutes"
+
+      - alert: HighMemoryUsage
+        expr: system_memory_usage_percent > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% for more than 5 minutes"
+
+      - alert: CriticalMemoryUsage
+        expr: system_memory_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is {{ $value }}% for more than 2 minutes"
+
+      - alert: HighDiskUsage
+        expr: system_disk_usage_percent > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value }}% for more than 10 minutes"
+
+      # API Performance Alerts
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High API error rate"
+          description: "API error rate is {{ $value | humanizePercentage }} for more than 5 minutes"
+
+      - alert: CriticalErrorRate
+        expr: sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "Critical API error rate"
+          description: "API error rate is {{ $value | humanizePercentage }} for more than 2 minutes"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High API response time"
+          description: "95th percentile response time is {{ $value }}s for more than 5 minutes"
+
+      - alert: CriticalResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "Critical API response time"
+          description: "95th percentile response time is {{ $value }}s for more than 2 minutes"
+
+      # Application Health Alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "Service is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+
+      - alert: HighApplicationErrors
+        expr: rate(application_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High application error rate"
+          description: "Application error rate is {{ $value }} errors/sec for {{ $labels.error_type }}"
+
+      # Business Logic Alerts
+      - alert: MLModelLowAccuracy
+        expr: ml_model_accuracy < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: ml_models
+        annotations:
+          summary: "ML Model accuracy below threshold"
+          description: "Model {{ $labels.model_name }} accuracy is {{ $value | humanizePercentage }}"
+
+      - alert: FailedUserLogins
+        expr: rate(user_logins_total{status="failed"}[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: auth
+        annotations:
+          summary: "High failed login rate"
+          description: "Failed login rate is {{ $value }} attempts/sec for more than 5 minutes"
+
+      # Infrastructure Alerts
+      - alert: TooManyConnections
+        expr: active_connections_total > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Too many active connections"
+          description: "Active connections count is {{ $value }}"
+
+      - alert: DatabaseConnectionIssues
+        expr: database_connections_active < 1
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connection issues"
+          description: "No active database connections detected for more than 2 minutes"

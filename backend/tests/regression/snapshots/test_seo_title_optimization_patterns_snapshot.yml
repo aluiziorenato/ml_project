@@ -1,0 +1,29 @@
+case_1:
+  length: 11
+  optimized: Short title
+  original: short title
+case_2:
+  length: 51
+  optimized: This is a medium length title that should work well
+  original: This is a medium length title that should work well
+case_3:
+  length: 57
+  optimized: This is a very long title that will definitely exceed the
+  original: This is a very long title that will definitely exceed the maximum length
+    limit and should be truncated
+case_4:
+  length: 34
+  optimized: Title with special characters!@#$%
+  original: title with special characters!@#$%
+case_5:
+  length: 17
+  optimized: TITLE IN ALL CAPS
+  original: TITLE IN ALL CAPS
+case_6:
+  length: 38
+  optimized: Title with numbers 123 and symbols &*(
+  original: title with numbers 123 and symbols &*(
+case_7:
+  length: 1
+  optimized: A
+  original: a

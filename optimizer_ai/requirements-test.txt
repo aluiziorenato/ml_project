@@ -1,0 +1,10 @@
+# Test dependencies for optimizer_ai service
+pytest>=8.0.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0
+pytest-mock>=3.11.0
+aioresponses>=0.7.4
+responses>=0.25.0
+httpx>=0.24.0
+pydantic>=2.0.0
+fastapi[testing]>=0.100.0

@@ -1,0 +1,62 @@
+{
+  "type": "module",
+  "name": "ml-integration-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "react-scripts build",
+    "preview": "vite preview",
+    "test": "react-scripts test",
+    "test:coverage": "vitest --coverage",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:install": "cypress install",
+    "e2e": "cypress run",
+    "e2e:headless": "cypress run --headless",
+    "start": "react-scripts start",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@heroicons/react": "^2.2.0",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.3.1",
+    "@mui/system": "^7.3.1",
+    "@testing-library/jest-dom": "^6.7.0",
+    "@testing-library/react": "^16.3.0",
+    "axios": "^1.11.0",
+    "clsx": "1.2.1",
+    "framer-motion": "10.12.6",
+    "lucide-react": "^0.541.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "^7.8.2",
+    "react-scripts": "^5.0.1",
+    "recharts": "2.5.0",
+    "vitest": "^3.2.4",
+    "zustand": "^5.0.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "autoprefixer": "10.4.14",
+    "cypress": "^13.15.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "3.3.3",
+    "vite": "^5.4.19"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

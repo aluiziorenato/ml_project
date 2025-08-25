@@ -1,0 +1,100 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+backend/.env
+frontend/.env
+backend/app/__pycache__/
+frontend/node_modules/
+frontend/dist/
+*.log
+
+# Database
+*.db
+*.sqlite3
+
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# Testing
+.pytest_cache/
+.tox/
+
+# Benchmarks
+.benchmarks/
+
+# Memory profiler
+*.dat
+
+# Load testing
+locustfile.py
+
+# Temporary files
+/tmp/
+.tmp/
+*.tmp
+
+# AutoML results and tracking (exclude from version control)
+automl_results/
+simple_tracking/
+
+# 🔐 Security: Never commit secrets or sensitive files
+.env
+.env.*
+*.key
+*.pem
+*.p12
+secrets.txt
+secrets/
+*secret*
+*token*
+*credentials*
+deployment-tokens/
+mlruns/

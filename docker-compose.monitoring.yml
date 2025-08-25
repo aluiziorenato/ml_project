@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-lb
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - frontend
+      - simulator_service
+      - learning_service
+      - optimizer_ai
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://usuario:senha@db:5432/nome_do_banco
+      - REDIS_URL=redis://redis:6379
+      - PROMETHEUS_PORT=8000
+      - LOKI_URL=http://loki:3100
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/logs:/app/logs
+    restart: unless-stopped
+
+  simulator_service:
+    build:
+      context: ./simulator_service
+      dockerfile: Dockerfile
+    environment:
+      - PROMETHEUS_PORT=8001
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./simulator_service/logs:/app/logs
+    restart: unless-stopped
+
+  learning_service:
+    build:
+      context: ./learning_service
+      dockerfile: Dockerfile
+    environment:
+      - PROMETHEUS_PORT=8002
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./learning_service/logs:/app/logs
+    restart: unless-stopped
+
+  optimizer_ai:
+    build:
+      context: ./optimizer_ai
+      dockerfile: Dockerfile
+    environment:
+      - PROMETHEUS_PORT=8003
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./optimizer_ai/logs:/app/logs
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - VITE_BACKEND_URL=http://nginx
+      - VITE_SIMULATOR_URL=http://nginx/simulator
+      - VITE_LEARNING_URL=http://nginx/learning
+      - VITE_OPTIMIZER_URL=http://nginx/optimizer
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: usuario
+      POSTGRES_PASSWORD: senha
+      POSTGRES_DB: nome_do_banco
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
+  prometheus_data:
+  grafana_data:
+  redis_data:
+  loki_data:
+
+networks:
+  default:
+    name: ml_project_network
