@@ -31,7 +31,7 @@ numpy==1.26.4
 scikit-learn==1.5.2
 
 # Date/Time handling
-python-dateutil==2.9.0
+python-dateutil==2.9.0.post0
 
 # Monitoring & Metrics
 prometheus-client==0.21.1
