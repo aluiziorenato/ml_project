@@ -1,185 +1,203 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import KPICard from "../components/KPICard";
-import DataTable from "../components/DataTable";
+// src/pages/Products.jsx
+import { useEffect, useMemo, useState } from "react";
+import { carregarProdutos } from "../services/productService";
+import {
+  Box,
+  Chip,
+  CircularProgress,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from "@mui/material";
 import FiltrosInteligentes from "../components/FiltrosInteligentes";
 
+function useUserId() {
+  return "user-123";
+}
+
+function computeTags(prod) {
+  const views = Number(prod?.views ?? 0);
+  const vendas = Number(prod?.vendas ?? 0);
+  const estoque = Number(prod?.estoque ?? 0);
+  const turnover = Number(prod?.turnover ?? 0);
+  const conversao = views > 0 ? vendas / views : 0;
+  const altaDemanda = views >= 1000 && conversao >= 0.02;
+  const baixaConcorrencia = turnover >= 5 && estoque <= 50;
+  return { altaDemanda, baixaConcorrencia };
+}
+
+function getLSKey(userId) {
+  return `filters:${userId ?? "anon"}`;
+}
+
 export default function Products() {
-  const [products, setProducts] = useState([]);
-  const [metrics, setMetrics] = useState({});
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const navigate = useNavigate();
+  const userId = useUserId();
+  const [loading, setLoading] = useState(false);
+  const [allProducts, setAllProducts] = useState([]);
+  const [activeFilters, setActiveFilters] = useState(null);
 
   useEffect(() => {
-    // Mock de produtos
-    const mockProducts = [
-      { id: "ML001", name: "Smartphone Samsung Galaxy", category: "Eletrônicos", price: 899.99, stock: 45, status: "Ativo", sales: 127, views: 2340 },
-      { id: "ML002", name: "Tênis Nike Air Max", category: "Calçados", price: 299.99, stock: 23, status: "Ativo", sales: 89, views: 1890 },
-      { id: "ML003", name: "Notebook Dell Inspiron", category: "Eletrônicos", price: 2199.99, stock: 8, status: "Baixo Estoque", sales: 34, views: 980 },
-      { id: "ML004", name: "Camiseta Adidas", category: "Roupas", price: 79.99, stock: 0, status: "Esgotado", sales: 156, views: 2100 },
-      { id: "ML005", name: "Fone de Ouvido JBL", category: "Eletrônicos", price: 149.99, stock: 67, status: "Ativo", sales: 203, views: 3420 }
-    ];
-    setProducts(mockProducts);
-    setFilteredProducts(mockProducts);
-
-    // Mock de métricas
-    setMetrics({
-      totalProducts: 127,
-      activeProducts: 98,
-      lowStock: 15,
-      outOfStock: 14,
-      totalViews: 45280,
-      totalSales: 609,
-      avgConversion: 1.34,
-      topCategory: "Eletrônicos"
-    });
+    let mounted = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const raw = await carregarProdutos();
+        const data = (Array.isArray(raw) ? raw : []).map((p) => ({
+          id: p.id,
+          nome: p.nome ?? "-",
+          categoria: p.categoria ?? "-",
+          status: p.status ?? "Ativo",
+          preco: Number(p.preco ?? 0),
+          roi: Number(p.roi ?? 0),
+          sazonalidade: p.sazonalidade ?? "",
+          views: Number(p.views ?? 0),
+          vendas: Number(p.vendas ?? 0),
+          estoque: Number(p.estoque ?? 0),
+          turnover: Number(p.turnover ?? 0),
+          imagem: p.imagem ?? null,
+        }));
+        if (mounted) setAllProducts(data);
+      } catch (err) {
+        console.error("Erro ao carregar produtos:", err);
+        if (mounted) setAllProducts([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
-  const handleFilter = (filtros) => {
-    const resultado = products.filter((p) => {
-      return (
-        (!filtros.categoria || p.category === filtros.categoria) &&
-        (!filtros.status || p.status === filtros.status)
-      );
-    });
-    setFilteredProducts(resultado);
-  };
-
-  const productColumns = [
-    { field: "id", label: "ID", sortable: true },
-    { field: "name", label: "Nome", sortable: true },
-    { field: "category", label: "Categoria", sortable: true },
-    { field: "price", label: "Preço", sortable: true, render: (value) => `R$ ${value.toFixed(2)}` },
-    {
-      field: "stock",
-      label: "Estoque",
-      sortable: true,
-      render: (value) => (
-        <span
-          className={`font-semibold ${
-            value === 0 ? "text-red-600" : value < 20 ? "text-orange-600" : "text-green-600"
-          }`}
-        >
-          {value}
-        </span>
-      )
-    },
-    {
-      field: "status",
-      label: "Status",
-      sortable: true,
-      render: (value) => (
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${
-            value === "Ativo"
-              ? "bg-green-100 text-green-800"
-              : value === "Baixo Estoque"
-              ? "bg-orange-100 text-orange-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {value}
-        </span>
-      )
-    },
-    { field: "sales", label: "Vendas", sortable: true },
-    { field: "views", label: "Visualizações", sortable: true }
-  ];
-
-  const actions = [
-    {
-      label: "Editar",
-      onClick: (product) => console.log("Editar produto:", product),
-      className: "bg-blue-100 text-blue-700 hover:bg-blue-200"
-    },
-    {
-      label: "Ver",
-      onClick: (product) => navigate(`/produto/${product.id}`),
-      className: "bg-gray-100 text-gray-700 hover:bg-gray-200"
+  const initialFilters = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(getLSKey(userId));
+      return raw ? JSON.parse(raw) : undefined;
+    } catch {
+      return undefined;
     }
-  ];
+  }, [userId]);
+
+  const handleFilter = (f) => setActiveFilters(f);
+
+  const filteredProducts = useMemo(() => {
+    if (!activeFilters) return allProducts;
+    const { categorias = [], status = [], preco = [0, Infinity], roiMin = 0, sazonalidade = "", tags = {} } = activeFilters;
+
+    return allProducts.filter((p) => {
+      const tagsP = computeTags(p);
+      const passCategoria = categorias.length ? categorias.includes(p.categoria) : true;
+      const passStatus = status.length ? status.includes(p.status) : true;
+      const passPreco = p.preco >= preco[0] && p.preco <= (preco[1] ?? Infinity);
+      const passROI = p.roi >= roiMin;
+      const passSazonalidade = sazonalidade ? p.sazonalidade === sazonalidade : true;
+      const passTagAlta = tags?.altaDemanda ? tagsP.altaDemanda : true;
+      const passTagBaixa = tags?.baixaConcorrencia ? tagsP.baixaConcorrencia : true;
+
+      return passCategoria && passStatus && passPreco && passROI && passSazonalidade && passTagAlta && passTagBaixa;
+    });
+  }, [activeFilters, allProducts]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="mb-8"
-      >
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Produtos</h1>
-        <p className="text-gray-600">Gerenciamento e visão geral dos produtos</p>
-      </motion.div>
+    <Box sx={{ p: 1.5 }}>
+      <Typography variant="subtitle1" sx={{ mb: 1 }}>Produtos</Typography>
 
-      {/* KPI Cards */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.6 }}
-      >
-        <KPICard title="Total de Produtos" value={metrics.totalProducts} change="+5" changeType="positive" icon="📦" color="blue" />
-        <KPICard title="Produtos Ativos" value={metrics.activeProducts} change="+3" changeType="positive" icon="✅" color="green" />
-        <KPICard title="Baixo Estoque" value={metrics.lowStock} change="+2" changeType="negative" icon="⚠️" color="orange" />
-        <KPICard title="Esgotados" value={metrics.outOfStock} change="-1" changeType="positive" icon="❌" color="red" />
-      </motion.div>
+      {/* Filtros mais compactos */}
+      <Box sx={{ "& .MuiFormControl-root": { minWidth: 120, mr: 1, mb: 1 } }}>
+        <FiltrosInteligentes
+          userId={userId}
+          initialFilters={initialFilters}
+          onFilter={handleFilter}
+          loading={loading}
+        />
+      </Box>
 
-      {/* Performance KPIs */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.6 }}
-      >
-        <KPICard title="Total de Visualizações" value={metrics.totalViews?.toLocaleString()} change="+12.8%" changeType="positive" icon="👁️" color="purple" />
-        <KPICard title="Total de Vendas" value={metrics.totalSales} change="+8.5%" changeType="positive" icon="💰" color="green" />
-        <KPICard title="Taxa de Conversão" value={`${metrics.avgConversion}%`} change="+0.2%" changeType="positive" icon="📈" color="blue" />
-        <KPICard title="Categoria Top" value={metrics.topCategory} change="Eletrônicos" changeType="neutral" icon="🏆" color="orange" />
-      </motion.div>
-
-      {/* Filtros Inteligentes */}
-      <motion.div
-        className="mb-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.6 }}
-      >
-        <FiltrosInteligentes onFilter={handleFilter} />
-      </motion.div>
-
-      {/* Ações gerais */}
-      <motion.div
-        className="mb-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6, duration: 0.6 }}
-      >
-        <div className="flex flex-wrap gap-4">
-          <button className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors duration-300 shadow-lg">
-            + Novo Produto
-          </button>
-          <button className="bg-white text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors duration-300 shadow-lg border">
-            📥 Importar
-          </button>
-          <button className="bg-white text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors duration-300 shadow-lg border">
-            📤 Exportar
-          </button>
-          <button className="bg-white text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors duration-300 shadow-lg border">
-            🔄 Atualizar Estoque
-          </button>
-        </div>
-      </motion.div>
-
-      {/* Tabela */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8, duration: 0.6 }}
-      >
-        <DataTable title="Lista de Produtos" columns={productColumns} data={filteredProducts} actions={actions} />
-      </motion.div>
-    </div>
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+          <CircularProgress size={20} />
+        </Box>
+      ) : (
+        <TableContainer component={Paper} sx={{ mt: 1 }}>
+          <Table
+            size="small"
+            sx={{
+              "& td, & th": {
+                py: 0.3,
+                px: 0.8,
+                fontSize: "0.75rem",
+                whiteSpace: "nowrap",
+              },
+            }}
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell>ID</TableCell>
+                <TableCell>Img</TableCell>
+                <TableCell>Produto</TableCell>
+                <TableCell>Cat.</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="right">Preço</TableCell>
+                <TableCell align="right">ROI</TableCell>
+                <TableCell>Saz.</TableCell>
+                <TableCell>Tags</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredProducts.map((p) => {
+                const t = computeTags(p);
+                return (
+                  <TableRow key={p.id} hover>
+                    <TableCell>{p.id}</TableCell>
+                    <TableCell>
+                      {p.imagem ? (
+                        <img
+                          src={p.imagem}
+                          alt={p.nome}
+                          style={{
+                            width: 28,
+                            height: 28,
+                            objectFit: "cover",
+                            borderRadius: 3,
+                          }}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <Box sx={{ width: 28, height: 28, bgcolor: "grey.200", borderRadius: 1 }} />
+                      )}
+                    </TableCell>
+                    <TableCell>{p.nome}</TableCell>
+                    <TableCell>{p.categoria}</TableCell>
+                    <TableCell>{p.status}</TableCell>
+                    <TableCell align="right">R$ {p.preco.toFixed(2)}</TableCell>
+                    <TableCell align="right">{p.roi.toFixed(2)}x</TableCell>
+                    <TableCell>{p.sazonalidade || "-"}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", gap: 0.3 }}>
+                        {t.altaDemanda && (
+                          <Chip size="small" label="Alta" color="primary" sx={{ fontSize: "0.65rem", height: 18 }} />
+                        )}
+                        {t.baixaConcorrencia && (
+                          <Chip size="small" label="Baixa Conc." color="success" sx={{ fontSize: "0.65rem", height: 18 }} />
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {filteredProducts.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} align="center">
+                    Nenhum produto encontrado com os filtros atuais.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Box>
   );
 }

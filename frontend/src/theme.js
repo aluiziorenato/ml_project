@@ -7,20 +7,29 @@ const grafanaTheme = (mode = "dark") => {
     palette: {
       mode,
       primary: {
-        main: "#00bcd4", // Azul vibrante estilo Grafana
+        main: "#2563EB", // Azul médio: ação principal
       },
       secondary: {
-        main: "#ff9800", // Laranja para destaque
+        main: "#F59E0B", // Laranja: alerta e destaque
+      },
+      success: {
+        main: "#10B981", // Verde: status positivo
+      },
+      error: {
+        main: "#EF4444", // Vermelho: falhas e riscos
+      },
+      warning: {
+        main: "#F59E0B", // Reforçando alerta
       },
       background: {
-        default: isDark ? "#1f2a36" : "#f4f6f8",
-        paper: isDark ? "#2c3e50" : "#ffffff",
+        default: isDark ? "#1F2937" : "#F9FAFB", // Fundo neutro
+        paper: isDark ? "#2C3E50" : "#FFFFFF",
       },
       text: {
-        primary: isDark ? "#ffffff" : "#1a1a1a",
-        secondary: isDark ? "#b0bec5" : "#5f6368",
+        primary: isDark ? "#FFFFFF" : "#1F2937", // Texto principal
+        secondary: isDark ? "#B0BEC5" : "#5F6368",
       },
-      divider: isDark ? "#37474f" : "#cfd8dc",
+      divider: isDark ? "#37474F" : "#CFD8DC",
     },
 
     typography: {
@@ -51,14 +60,28 @@ const grafanaTheme = (mode = "dark") => {
           root: {
             textTransform: "none",
             fontWeight: 500,
+            borderRadius: 6,
+            padding: "8px 16px",
+            boxShadow: "none",
+            "&:hover": {
+              opacity: 0.9,
+            },
           },
         },
       },
       MuiInputBase: {
         styleOverrides: {
           root: {
-            backgroundColor: isDark ? "#263238" : "#ffffff",
+            backgroundColor: isDark ? "#263238" : "#FFFFFF",
             borderRadius: 4,
+          },
+        },
+      },
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            borderLeft: `4px solid ${isDark ? "#2563EB" : "#2563EB"}`,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           },
         },
       },

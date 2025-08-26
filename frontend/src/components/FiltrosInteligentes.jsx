@@ -1,55 +1,188 @@
 // src/components/FiltrosInteligentes.jsx
-import { useEffect, useState } from "react";
-import { Box, Chip, Slider, Select, MenuItem, Typography } from "@mui/material";
-import axios from "axios";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Box,
+  Stack,
+  Chip,
+  Slider,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  OutlinedInput,
+  Checkbox,
+  ListItemText,
+  CircularProgress,
+} from "@mui/material";
+import { useFilterOptions } from "../hooks/useFilterOptions";
 
-export default function FiltrosInteligentes({ onFilter }) {
-  const [categorias, setCategorias] = useState([]);
-  const [categoria, setCategoria] = useState("");
-  const [preco, setPreco] = useState([0, 1000]);
-  const [roi, setRoi] = useState([0, 100]);
-  const [tags, setTags] = useState([]);
+const DEFAULTS = {
+  categorias: [],
+  status: [],
+  preco: [0, 1000],
+  roiMin: 0,
+  sazonalidade: "",
+  tags: { altaDemanda: false, baixaConcorrencia: false },
+};
 
+function getKey(userId) {
+  return `filters:${userId ?? "anon"}`;
+}
+
+export default function FiltrosInteligentes({
+  userId,
+  onFilter,
+  initialFilters,
+  loading: loadingParent,
+}) {
+  const { categorias, status, loading: loadingOptions } = useFilterOptions();
+
+  // Carrega ordem de precedência: localStorage > initialFilters > DEFAULTS
+  const hydratedInitial = useMemo(() => {
+    try {
+      const fromLS = localStorage.getItem(getKey(userId));
+      if (fromLS) return JSON.parse(fromLS);
+    } catch {}
+    return { ...DEFAULTS, ...(initialFilters || {}) };
+  }, [userId, initialFilters]);
+
+  const [filtros, setFiltros] = useState(hydratedInitial);
+  const debounceRef = useRef(null);
+
+  // Persistência + debounce de emissão
   useEffect(() => {
-    axios.get("/api/categories").then((res) => setCategorias(res.data));
-  }, []);
+    try {
+      localStorage.setItem(getKey(userId), JSON.stringify(filtros));
+    } catch {}
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      onFilter?.(filtros);
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [filtros, onFilter, userId]);
 
-  useEffect(() => {
-    axios
-      .post("/api/anuncios/filter", {
-        categoria,
-        preco_min: preco[0],
-        preco_max: preco[1],
-        roi_min: roi[0],
-        roi_max: roi[1],
-      })
-      .then((res) => {
-        onFilter(res.data);
-        setTags(res.data.tags || []);
-      });
-  }, [categoria, preco, roi]);
+  const isLoading = loadingParent || loadingOptions;
+
+  const handleChangeArray = (key) => (event) => {
+    setFiltros((prev) => ({ ...prev, [key]: event.target.value }));
+  };
+
+  const handleChangeSlider = (key) => (_, value) => {
+    setFiltros((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const toggleTag = (key) => () => {
+    setFiltros((prev) => ({
+      ...prev,
+      tags: { ...prev.tags, [key]: !prev.tags[key] },
+    }));
+  };
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h6">Filtros Inteligentes</Typography>
+    <Box sx={{ p: 2, borderRadius: 2, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" }}>
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
+        {/* Categorias */}
+        <FormControl sx={{ minWidth: 220 }}>
+          <InputLabel id="cat-label">Categorias</InputLabel>
+          <Select
+            labelId="cat-label"
+            multiple
+            value={filtros.categorias}
+            onChange={handleChangeArray("categorias")}
+            input={<OutlinedInput label="Categorias" />}
+            renderValue={(selected) => selected.join(", ")}
+          >
+            {categorias.map((name) => (
+              <MenuItem key={name} value={name}>
+                <Checkbox checked={filtros.categorias.indexOf(name) > -1} />
+                <ListItemText primary={name} />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-      <Select value={categoria} onChange={(e) => setCategoria(e.target.value)} fullWidth>
-        {categorias.map((cat) => (
-          <MenuItem key={cat.id} value={cat.nome}>{cat.nome}</MenuItem>
-        ))}
-      </Select>
+        {/* Status */}
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel id="status-label">Status</InputLabel>
+          <Select
+            labelId="status-label"
+            multiple
+            value={filtros.status}
+            onChange={handleChangeArray("status")}
+            input={<OutlinedInput label="Status" />}
+            renderValue={(selected) => selected.join(", ")}
+          >
+            {status.map((name) => (
+              <MenuItem key={name} value={name}>
+                <Checkbox checked={filtros.status.indexOf(name) > -1} />
+                <ListItemText primary={name} />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-      <Typography mt={2}>Faixa de Preço</Typography>
-      <Slider value={preco} onChange={(e, val) => setPreco(val)} min={0} max={5000} />
+        {/* Preço */}
+        <Box sx={{ minWidth: 240 }}>
+          <InputLabel shrink>Faixa de preço</InputLabel>
+          <Slider
+            value={filtros.preco}
+            onChange={handleChangeSlider("preco")}
+            valueLabelDisplay="auto"
+            min={0}
+            max={10000}
+            step={10}
+          />
+        </Box>
 
-      <Typography mt={2}>ROI (%)</Typography>
-      <Slider value={roi} onChange={(e, val) => setRoi(val)} min={0} max={100} />
+        {/* ROI mínimo */}
+        <Box sx={{ minWidth: 200 }}>
+          <InputLabel shrink>ROI mínimo</InputLabel>
+          <Slider
+            value={filtros.roiMin}
+            onChange={handleChangeSlider("roiMin")}
+            valueLabelDisplay="auto"
+            min={0}
+            max={10}
+            step={0.1}
+          />
+        </Box>
 
-      <Box mt={2}>
-        {tags.map((tag, i) => (
-          <Chip key={i} label={tag} color="primary" sx={{ mr: 1 }} />
-        ))}
-      </Box>
+        {/* Sazonalidade */}
+        <FormControl sx={{ minWidth: 180 }}>
+          <InputLabel id="saz-label">Sazonalidade</InputLabel>
+          <Select
+            labelId="saz-label"
+            value={filtros.sazonalidade}
+            label="Sazonalidade"
+            onChange={(e) =>
+              setFiltros((prev) => ({ ...prev, sazonalidade: e.target.value }))
+            }
+          >
+            <MenuItem value=""><em>Todas</em></MenuItem>
+            <MenuItem value="Baixa">Baixa</MenuItem>
+            <MenuItem value="Média">Média</MenuItem>
+            <MenuItem value="Alta">Alta</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Chips de tags (filtros) */}
+        <Stack direction="row" spacing={1}>
+          <Chip
+            label="Alta Demanda"
+            color={filtros.tags.altaDemanda ? "primary" : "default"}
+            variant={filtros.tags.altaDemanda ? "filled" : "outlined"}
+            onClick={toggleTag("altaDemanda")}
+          />
+          <Chip
+            label="Baixa Concorrência"
+            color={filtros.tags.baixaConcorrencia ? "primary" : "default"}
+            variant={filtros.tags.baixaConcorrencia ? "filled" : "outlined"}
+            onClick={toggleTag("baixaConcorrencia")}
+          />
+        </Stack>
+
+        {isLoading && <CircularProgress size={24} />}
+      </Stack>
     </Box>
   );
 }
