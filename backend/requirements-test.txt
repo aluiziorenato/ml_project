@@ -27,7 +27,7 @@ faker==22.4.0
 httpx==0.28.1
 
 # Load testing
-locust==2.24.1
+locust==2.34.0
 
 # Test data validation
 cerberus==1.3.5
