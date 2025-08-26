@@ -10,7 +10,7 @@ pytest-benchmark==4.0.0
 
 # HTTP mocking and async responses
 aioresponses==0.7.8
-responses==0.25.0
+responses==0.25.8
 
 # Memory and performance monitoring
 psutil==7.0.0
