@@ -31,7 +31,7 @@ python-multipart==0.0.20
 email-validator==2.2.0
 
 # Error Monitoring
-sentry-sdk[fastapi]==2.18.0  # Error monitoring and performance tracking
+sentry-sdk[fastapi]==2.35.0  # Error monitoring and performance tracking
 
 # Monitoring and Logging
 prometheus-client==0.22.1     # Prometheus metrics collection
