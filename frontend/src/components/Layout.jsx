@@ -40,6 +40,7 @@ const menu = [
 ];
 
 import React, { useEffect, useRef } from "react";
+const clickAudio = typeof window !== 'undefined' ? new window.Audio('/click.mp3') : null;
 export default function Layout({ sidebarOpen = false, toggleSidebar, mode, toggleColorMode }) {
   const timerRef = useRef();
   useEffect(() => {
@@ -82,14 +83,24 @@ export default function Layout({ sidebarOpen = false, toggleSidebar, mode, toggl
                 '& .MuiListItemText-primary': { color: '#222' },
                 '& .MuiListItemIcon-root': {
                   color: '#888',
-                  transition: 'color 0.2s',
+                  transition: 'color 0.2s, transform 0.2s, box-shadow 0.2s',
                 },
                 '&:hover .MuiListItemIcon-root': {
                   color: '#1976d2',
+                  transform: 'scale(1.25) rotateY(12deg)',
+                  boxShadow: '0 4px 16px #1976d233',
+                  filter: 'drop-shadow(0 2px 8px #1976d2aa)',
                 },
                 '&:hover .MuiListItemText-primary': {
                   color: '#1976d2',
                 },
+              }}
+              onMouseEnter={() => {
+                if (clickAudio) {
+                  clickAudio.volume = 0.18;
+                  clickAudio.currentTime = 0;
+                  clickAudio.play();
+                }
               }}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
