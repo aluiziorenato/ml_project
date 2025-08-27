@@ -6,7 +6,7 @@ export default function DashboardImagem() {
     <Paper sx={{ p: 2 }}>
       <Typography variant="h5" sx={{ mb: 2 }}>Ideia de Dashboard</Typography>
       <Box sx={{ display: "flex", justifyContent: "center" }}>
-        <img src={require("../../dashboard-ideia.png")} alt="Dashboard Ideia" style={{ maxWidth: "100%", height: "auto" }} />
+        {/* Imagem removida: dashboard-ideia.png não encontrada */}
       </Box>
     </Paper>
   );

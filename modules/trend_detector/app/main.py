@@ -22,28 +22,46 @@ async def get_status():
 
 @app.post("/api/detect-trend")
 async def detect_trend(request: Request):
+    import os
+    from joblib import load
+    import glob
     try:
-        # Espera JSON com 'ds' (datas) e 'y' (valores)
         data = await request.json()
         df = pd.DataFrame(data)
         if "ds" not in df.columns or "y" not in df.columns:
             return {"error": "JSON deve conter as chaves 'ds' (datas) e 'y' (valores)."}
-
-        # Ajusta tipo das datas
         df["ds"] = pd.to_datetime(df["ds"])
-        model = Prophet()
-        model.fit(df)
-        future = model.make_future_dataframe(periods=30)
-        forecast = model.predict(future)
-
-        # Retorna tendências, previsão e datas
-        trend = forecast[["ds", "trend", "yhat"]].tail(30).to_dict(orient="records")
-        return {
-            "trend": trend,
-            "timestamp": datetime.now().isoformat()
-        }
-
+        model_files = glob.glob(os.path.join(os.path.dirname(__file__), '../models/trend_model_*.joblib'))
+        if model_files:
+            model_path = sorted(model_files)[-1]
+            try:
+                model = load(model_path)
+                future = model.make_future_dataframe(periods=30)
+                forecast = model.predict(future)
+                trend = forecast[["ds", "trend", "yhat"]].tail(30).to_dict(orient="records")
+                return {
+                    "trend": trend,
+                    "timestamp": datetime.now().isoformat(),
+                    "model_version": os.path.basename(model_path)
+                }
+            except Exception as e:
+                return {"error": f"Erro ao carregar modelo Prophet: {str(e)}", "timestamp": datetime.now().isoformat()}
+        else:
+            # Fallback seguro: Prophet treinado na hora
+            from prophet import Prophet
+            model = Prophet()
+            model.fit(df)
+            future = model.make_future_dataframe(periods=30)
+            forecast = model.predict(future)
+            trend = forecast[["ds", "trend", "yhat"]].tail(30).to_dict(orient="records")
+            return {
+                "trend": trend,
+                "timestamp": datetime.now().isoformat(),
+                "model_version": "fallback"
+            }
     except Exception as e:
+        import logging
+        logging.error(f"Erro na detecção de tendência: {str(e)}")
         return {"error": str(e), "timestamp": datetime.now().isoformat()}
 
 if __name__ == "__main__":

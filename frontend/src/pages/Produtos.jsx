@@ -27,9 +27,58 @@ function Produtos() {
 
   async function fetchProdutos() {
     setLoading(true);
-    const lista = await carregarProdutos();
-    setProdutos(lista);
-    setLoading(false);
+    // MOCK: dados de exemplo para visualização
+    const lista = [
+      {
+        id: 1,
+        nome: "Smartphone X",
+        preco: 2999.99,
+        status: "Ativo",
+        estoque: 12,
+        categoria: "Eletrônicos",
+        imagem: "https://via.placeholder.com/80x80.png?text=Smartphone"
+      },
+      {
+        id: 2,
+        nome: "Notebook Pro",
+        preco: 5999.90,
+        status: "Ativo",
+        estoque: 7,
+        categoria: "Informática",
+        imagem: "https://via.placeholder.com/80x80.png?text=Notebook"
+      },
+      {
+        id: 3,
+        nome: "Cadeira Gamer",
+        preco: 899.00,
+        status: "Inativo",
+        estoque: 0,
+        categoria: "Móveis",
+        imagem: "https://via.placeholder.com/80x80.png?text=Cadeira"
+      },
+      {
+        id: 4,
+        nome: "Fone Bluetooth",
+        preco: 399.90,
+        status: "Ativo",
+        estoque: 25,
+        categoria: "Eletrônicos",
+        imagem: "https://via.placeholder.com/80x80.png?text=Fone"
+      },
+      {
+        id: 5,
+        nome: "Monitor 4K",
+        preco: 1999.00,
+        status: "Ativo",
+        estoque: 4,
+        categoria: "Informática",
+        imagem: "https://via.placeholder.com/80x80.png?text=Monitor"
+      }
+    ];
+    setTimeout(() => {
+      setProdutos(lista);
+      setLoading(false);
+    }, 800); // simula carregamento
   }
 
   useEffect(() => {

@@ -17,6 +17,7 @@ import numpy as np
 import logging
 import sys
 import os
+from joblib import load
 
 # Prophet para previsão sazonal
 from prophet import Prophet
@@ -141,6 +142,12 @@ MOCK_MARKET_DATA = {
         "air purifier": {"volume": 3000, "competition": 0.2, "trend": "up"},
     }
 }
+
+MODEL_PATH = "../models/prophet_{category}_{keyword}.joblib"
+
+def load_prophet_model(category, keyword):
+    path = MODEL_PATH.format(category=category, keyword=keyword)
+    return load(path)
 
 def predict_seasonal_demand_prophet(category: str, keywords: List[str], historical_data: Optional[Dict[str, List[Dict[str, Any]]]], days_ahead: int = 90) -> Dict[str, Any]:
     """

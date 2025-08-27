@@ -53,33 +53,33 @@ export default function DashboardLayout() {
     <Box sx={{ p: 2 }}>
       {/* KPIs principais em linha, harmônicos */}
       <Grid container columns={12} spacing={2} sx={{ mb: 2 }}>
-        <Grid gridColumn="span 12" md={6} lg={3}>
+        <Grid gridColumn={{ xs: 'span 12', sm: 'span 6', md: 'span 3' }}>
           <Card sx={{ p: 2, boxShadow: 3, border: 'none', borderRadius: 3, textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6 } }}>
             <Typography variant="subtitle2" color="text.secondary">Vendas</Typography>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>1200</Typography>
           </Card>
         </Grid>
-        <Grid gridColumn="span 12" md={6} lg={3}>
+        <Grid gridColumn={{ xs: 'span 12', sm: 'span 6', md: 'span 3' }}>
           <Card sx={{ p: 2, boxShadow: 3, border: 'none', borderRadius: 3, textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6 } }}>
             <Typography variant="subtitle2" color="text.secondary">ROI</Typography>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>2.5</Typography>
           </Card>
         </Grid>
-        <Grid gridColumn="span 12" md={6} lg={3}>
+        <Grid gridColumn={{ xs: 'span 12', sm: 'span 6', md: 'span 3' }}>
           <Card sx={{ p: 2, boxShadow: 3, border: 'none', borderRadius: 3, textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6 } }}>
             <Typography variant="subtitle2" color="text.secondary">Produtos Ativos</Typography>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>35</Typography>
           </Card>
         </Grid>
-        <Grid gridColumn="span 12" md={6} lg={3}>
+        <Grid gridColumn={{ xs: 'span 12', sm: 'span 6', md: 'span 3' }}>
           <Card sx={{ p: 2, boxShadow: 3, border: 'none', borderRadius: 3, textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6 } }}>
             <Typography variant="subtitle2" color="text.secondary">Alertas</Typography>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>3</Typography>
           </Card>
         </Grid>
       </Grid>
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid item xs={12} md={8}>
+      <Grid container columns={12} spacing={2} sx={{ mb: 2 }}>
+        <Grid gridColumn={{ xs: 'span 12', md: 'span 8' }}>
           <Card sx={{ p: 2, boxShadow: 3, border: 'none', borderRadius: 3, minHeight: 260, transition: 'transform 0.2s, box-shadow 0.2s', '&:hover': { transform: 'scale(1.01)', boxShadow: 5 } }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>Gráfico de Vendas</Typography>
             <Box sx={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#f5f7fa', borderRadius: 2 }}>
@@ -87,7 +87,7 @@ export default function DashboardLayout() {
             </Box>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid gridColumn={{ xs: 'span 12', md: 'span 4' }}>
           <Card sx={{ p: 2, boxShadow: 3, border: 'none', borderRadius: 3, minHeight: 260, transition: 'transform 0.2s, box-shadow 0.2s', '&:hover': { transform: 'scale(1.01)', boxShadow: 5 } }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>Alertas Recentes</Typography>
             <Box>

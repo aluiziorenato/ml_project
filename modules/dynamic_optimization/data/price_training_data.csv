@@ -1,0 +1,4 @@
+current_price,competitor_prices,category,optimal_price
+1200,"[1100, 1250, 1300]",electronics,1220
+350,"[340, 360, 370]",fashion,355
+1800,"[1750, 1850, 1900]",home,1820

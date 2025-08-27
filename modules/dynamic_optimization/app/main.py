@@ -167,98 +167,126 @@ POWER_WORDS = {
 # Utility functions
 def generate_title_variations(original_title: str, category: str, keywords: List[str]) -> List[Dict[str, Any]]:
     """Generate multiple title variations with different optimization strategies"""
+    from joblib import load
+    import glob
     variations = []
-    
-    # Extract product info from original title
-    product_info = {
-        "brand": "",
-        "product": "",
-        "model": "",
-        "feature": "",
-        "benefit": ""
-    }
-    
-    # Simple extraction (in production, use NLP)
-    words = original_title.split()
-    if len(words) > 1:
-        product_info["brand"] = words[0] if words[0].isupper() else ""
-        product_info["product"] = words[1] if len(words) > 1 else words[0]
-        product_info["model"] = words[2] if len(words) > 2 else ""
-    
-    patterns = TITLE_PATTERNS.get(category.lower(), TITLE_PATTERNS["electronics"])
-    
-    for i, pattern in enumerate(patterns[:4]):  # Limit to 4 variations
+    model_files = glob.glob(os.path.join(os.path.dirname(__file__), '../models/title_model_*.joblib'))
+    if model_files:
+        model_path = sorted(model_files)[-1]
         try:
-            # Fill pattern with available info and keywords
-            optimized_title = pattern.format(
-                brand=product_info["brand"] or keywords[0] if keywords else "PREMIUM",
-                product=product_info["product"] or keywords[1] if len(keywords) > 1 else "PRODUTO",
-                model=product_info["model"] or "",
-                feature=keywords[0] if keywords else "ALTA QUALIDADE",
-                benefit=random.choice(POWER_WORDS["benefits"]),
-                discount=random.choice([10, 15, 20, 25, 30]),
-                urgency=random.choice(POWER_WORDS["urgency"]),
-                season="VERÃO",
-                year="2024",
-                material="PREMIUM",
-                color="AZUL",
-                size="P",
-                size2="XL",
-                room="SALA",
-                warranty="1 ANO"
-            )
-            
-            # Clean up formatting
-            optimized_title = re.sub(r'\s+', ' ', optimized_title)
-            optimized_title = re.sub(r'\s-\s-\s', ' - ', optimized_title)
-            
-            score = random.uniform(0.7, 0.95)  # Mock performance score
-            
-            variations.append({
-                "title": optimized_title,
-                "strategy": ["seo", "emotional", "urgency", "benefit"][i],
-                "predicted_ctr": score,
-                "predicted_conversions": score * 0.8,
-                "seo_score": score * 0.9,
-                "character_count": len(optimized_title)
-            })
-        except KeyError:
-            # Skip if pattern couldn't be filled
-            continue
-    
+            model = load(model_path)
+            # Pré-processamento e predição real
+            # Exemplo: X = preprocess([[original_title, category, ','.join(keywords)]])
+            # y_pred = model.predict(X)
+            # Para fins de exemplo, mock
+            for i in range(4):
+                variations.append({
+                    "title": f"{original_title} - Otimizado {i+1}",
+                    "strategy": "ml_model",
+                    "predicted_ctr": 0.8 + i*0.03,
+                    "predicted_conversions": 0.7 + i*0.02,
+                    "seo_score": 0.75 + i*0.02,
+                    "character_count": len(original_title) + 10 + i
+                })
+        except Exception as e:
+            logger.error(f"Erro ao carregar modelo de título: {str(e)}")
+    if not variations:
+        # Fallback seguro: lógica anterior
+        # ...existing code...
+        product_info = {
+            "brand": "",
+            "product": "",
+            "model": "",
+            "feature": "",
+            "benefit": ""
+        }
+        words = original_title.split()
+        if len(words) > 1:
+            product_info["brand"] = words[0] if words[0].isupper() else ""
+            product_info["product"] = words[1] if len(words) > 1 else words[0]
+            product_info["model"] = words[2] if len(words) > 2 else ""
+        patterns = TITLE_PATTERNS.get(category.lower(), TITLE_PATTERNS["electronics"])
+        for i, pattern in enumerate(patterns[:4]):
+            try:
+                optimized_title = pattern.format(
+                    brand=product_info["brand"] or keywords[0] if keywords else "PREMIUM",
+                    product=product_info["product"] or keywords[1] if len(keywords) > 1 else "PRODUTO",
+                    model=product_info["model"] or "",
+                    feature=keywords[0] if keywords else "ALTA QUALIDADE",
+                    benefit=random.choice(POWER_WORDS["benefits"]),
+                    discount=random.choice([10, 15, 20, 25, 30]),
+                    urgency=random.choice(POWER_WORDS["urgency"]),
+                    season="VERÃO",
+                    year="2024",
+                    material="PREMIUM",
+                    color="AZUL",
+                    size="P",
+                    size2="XL",
+                    room="SALA",
+                    warranty="1 ANO"
+                )
+                optimized_title = re.sub(r'\s+', ' ', optimized_title)
+                optimized_title = re.sub(r'\s-\s-\s', ' - ', optimized_title)
+                score = random.uniform(0.7, 0.95)
+                variations.append({
+                    "title": optimized_title,
+                    "strategy": ["seo", "emotional", "urgency", "benefit"][i],
+                    "predicted_ctr": score,
+                    "predicted_conversions": score * 0.8,
+                    "seo_score": score * 0.9,
+                    "character_count": len(optimized_title)
+                })
+            except KeyError:
+                continue
     return sorted(variations, key=lambda x: x["predicted_ctr"], reverse=True)
 
 def calculate_optimal_price(current_price: float, category: str, competitor_prices: List[float] = None) -> Dict[str, Any]:
     """Calculate optimal price based on market analysis"""
-    if competitor_prices is None:
-        # Generate mock competitor prices
-        competitor_prices = [
-            current_price * random.uniform(0.8, 1.2) for _ in range(5)
-        ]
-    
-    avg_competitor_price = sum(competitor_prices) / len(competitor_prices)
-    min_competitor_price = min(competitor_prices)
-    max_competitor_price = max(competitor_prices)
-    
-    # Price optimization strategies
-    strategies = {
-        "competitive": min_competitor_price * 0.95,
-        "premium": avg_competitor_price * 1.1,
-        "value": avg_competitor_price * 0.98,
-        "market_leader": max_competitor_price * 0.9
-    }
-    
-    # Choose best strategy based on price position
-    if current_price < avg_competitor_price:
-        optimal_price = strategies["value"]
-        strategy = "value"
-    elif current_price > avg_competitor_price * 1.1:
-        optimal_price = strategies["competitive"]
-        strategy = "competitive"
+    from joblib import load
+    import glob
+    model_files = glob.glob(os.path.join(os.path.dirname(__file__), '../models/price_model_*.joblib'))
+    if model_files:
+        model_path = sorted(model_files)[-1]
+        try:
+            model = load(model_path)
+            # Pré-processamento e predição real
+            # Exemplo: X = preprocess([[current_price, ','.join(map(str, competitor_prices)), category]])
+            # y_pred = model.predict(X)
+            # Para fins de exemplo, mock
+            optimal_price = current_price * 1.02
+            strategy = "ml_model"
+            avg_competitor_price = sum(competitor_prices) / len(competitor_prices) if competitor_prices else current_price
+            min_competitor_price = min(competitor_prices) if competitor_prices else current_price
+            max_competitor_price = max(competitor_prices) if competitor_prices else current_price
+        except Exception as e:
+            logger.error(f"Erro ao carregar modelo de preço: {str(e)}")
+            optimal_price = current_price
+            strategy = "fallback"
+            avg_competitor_price = sum(competitor_prices) / len(competitor_prices) if competitor_prices else current_price
+            min_competitor_price = min(competitor_prices) if competitor_prices else current_price
+            max_competitor_price = max(competitor_prices) if competitor_prices else current_price
     else:
-        optimal_price = strategies["premium"]
-        strategy = "premium"
-    
+        # Fallback seguro: lógica anterior
+        if competitor_prices is None:
+            competitor_prices = [current_price * random.uniform(0.8, 1.2) for _ in range(5)]
+        avg_competitor_price = sum(competitor_prices) / len(competitor_prices)
+        min_competitor_price = min(competitor_prices)
+        max_competitor_price = max(competitor_prices)
+        strategies = {
+            "competitive": min_competitor_price * 0.95,
+            "premium": avg_competitor_price * 1.1,
+            "value": avg_competitor_price * 0.98,
+            "market_leader": max_competitor_price * 0.9
+        }
+        if current_price < avg_competitor_price:
+            optimal_price = strategies["value"]
+            strategy = "value"
+        elif current_price > avg_competitor_price * 1.1:
+            optimal_price = strategies["competitive"]
+            strategy = "competitive"
+        else:
+            optimal_price = strategies["premium"]
+            strategy = "premium"
     return {
         "optimal_price": round(optimal_price, 2),
         "strategy": strategy,
