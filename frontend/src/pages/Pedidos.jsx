@@ -22,9 +22,9 @@ export default function Pedidos() {
         Lista de Pedidos
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container columns={12} spacing={3}>
         {pedidosMock.map((pedido) => (
-          <Grid key={pedido.id} size={{ xs: 12, sm: 6, md: 4 }}>
+          <Grid key={pedido.id} gridColumn="span 4">
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="h6">Pedido #{pedido.id}</Typography>

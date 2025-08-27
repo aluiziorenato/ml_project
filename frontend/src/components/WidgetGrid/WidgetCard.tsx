@@ -10,9 +10,9 @@ const widgets = [
 
 export default function WidgetGrid({ filters }: { filters: Record<string, string | undefined> }) {
   return (
-    <Grid container spacing={2}>
+    <Grid container columns={12} spacing={2}>
       {widgets.map((widget, index) => (
-        <Grid key={index} size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid key={index} gridColumn="span 3">
           <WidgetCard widget={widget} />
         </Grid>
       ))}
