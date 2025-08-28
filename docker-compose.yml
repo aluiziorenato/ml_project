@@ -49,66 +49,6 @@ services:
     depends_on:
       - db
 
-  ai_predictive:
-    build:
-      context: ./modules/ai_predictive
-      dockerfile: Dockerfile
-    container_name: ml_ai_predictive
-    ports:
-      - "8010:8000"
-    env_file:
-      - modules/ai_predictive/.env
-    volumes:
-      - ./modules/ai_predictive/models:/app/models
-      - ./modules/data:/app/data
-    depends_on:
-      - db
-
-  acos_service:
-    build:
-      context: ./modules/acos_service
-      dockerfile: Dockerfile
-    container_name: ml_acos_service
-    ports:
-      - "8020:8000"
-    env_file:
-      - modules/acos_service/.env
-    volumes:
-      - ./modules/acos_service/models:/app/models
-      - ./modules/data:/app/data
-    depends_on:
-      - db
-
-  gamification_service:
-    build:
-      context: ./modules/gamification_service
-      dockerfile: Dockerfile
-    container_name: ml_gamification_service
-    ports:
-      - "8030:8000"
-    env_file:
-      - modules/gamification_service/.env
-    volumes:
-      - ./modules/gamification_service/models:/app/models
-      - ./modules/data:/app/data
-    depends_on:
-      - db
-
-  seo_intelligence:
-    build:
-      context: ./modules/seo_intelligence
-      dockerfile: Dockerfile
-    container_name: ml_seo_intelligence
-    ports:
-      - "8040:8000"
-    env_file:
-      - modules/seo_intelligence/.env
-    volumes:
-      - ./modules/seo_intelligence/models:/app/models
-      - ./modules/data:/app/data
-    depends_on:
-      - db
-
   frontend:
     build:
       context: ./frontend
@@ -144,6 +84,19 @@ services:
     depends_on:
       - backend
       - postgres_exporter
+
+
+  frontend-vite:
+    build:
+      context: ./frontend-vite
+      dockerfile: Dockerfile
+    container_name: ml_frontend_vite
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend-vite:/app
+    depends_on:
+      - backend
 
 volumes:
   pgdata:

@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    // Target e módulo
+    "target": "ESNext",
+    "module": "ESNext",
+
+    // Bibliotecas e JSX
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "jsx": "react-jsx",
+
+    // Segurança e consistência
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "useDefineForClassFields": true,
+
+    // Resolução de módulos
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+
+    // Interoperabilidade
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // Outros
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowJs": false
+  },
+  "include": ["src", "vite.config.ts"],
+  "references": [
+    { "path": "./tsconfig.node.json" }
+  ]
+}

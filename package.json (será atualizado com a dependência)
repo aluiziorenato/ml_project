@@ -1,0 +1,10 @@
+{
+  "name": "frontend-vite",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^latest"
+  }
+}
