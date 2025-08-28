@@ -1,4 +1,5 @@
 import NovoAnuncioML from './pages/NovoAnuncioML';
+import MetricasPage from './pages/MetricasPage';
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import DashboardPage from './pages/Dashboard';
@@ -30,6 +31,7 @@ function App() {
         <Route path="/concorrentes" element={<Concorrentes />} />
         <Route path="/produto-detalhe" element={<ProdutoDetalhe />} />
         <Route path="/novo-anuncio" element={<NovoAnuncioML />} />
+        <Route path="/metricas" element={<MetricasPage />} />
       </Routes>
     </BrowserRouter>
   );

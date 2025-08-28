@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Box, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Tabs, Tab, Typography } from "@mui/material";
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import BoltIcon from '@mui/icons-material/Bolt';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -47,9 +49,9 @@ const menuItems = [
   ...iaModules,
   { divider: true },
   { label: 'Mercado Livre', section: true },
-  { label: 'Produtos', icon: <StoreIcon />, page: 'produtos', desc: 'Gestão de produtos cadastrados.' },
   { label: 'Anúncios', icon: <ListAltIcon />, page: 'anuncios', desc: 'Gerenciamento de anúncios ativos.' },
   { label: 'Pedidos', icon: <ShoppingCartIcon />, page: 'pedidos', desc: 'Controle de pedidos realizados.' },
+  { label: 'Métricas', icon: <BarChartIcon />, page: 'metricas', desc: 'Visualização de métricas dos anúncios Mercado Livre.' },
   { label: 'Concorrentes', icon: <GroupWorkIcon />, page: 'concorrentes', desc: 'Monitoramento de concorrentes.' },
   { label: 'Dashboard de Produto', icon: <InfoIcon />, page: 'produto-dashboard', desc: 'Visão detalhada de produto.' },
   { label: 'Detalhe do Produto', icon: <InfoIcon />, page: 'produto-detalhe', desc: 'Informações completas do produto.' },
@@ -104,20 +106,17 @@ const Dashboard: React.FC = () => {
         {/* Header */}
         <AppBar position="static" elevation={0} sx={{ background: '#fff', color: '#222a36', mb: 4 }}>
           <Toolbar>
-            <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }} onClick={() => setDrawerOpen(!drawerOpen)}>
-              <MenuIcon />
-            </IconButton>
+            <Box sx={{ position: 'relative', width: 40, height: 40, mr: 2 }}>
+              <Box sx={{ background: '#1976d2', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 2 }}>
+                <PsychologyIcon sx={{ color: '#fff', fontSize: 28 }} />
+              </Box>
+              <BoltIcon sx={{ color: '#ffd600', fontSize: 18, position: 'absolute', right: 4, bottom: 4, opacity: 0.9 }} />
+            </Box>
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Dashboard CortexPrime
+              CortexPrime Dashboard
             </Typography>
           </Toolbar>
         </AppBar>
-        {/* Tabs para navegação interna */}
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
-          <Tab label="Resumo" />
-          <Tab label="Vendedores" />
-          <Tab label="Gráficos" />
-        </Tabs>
         {/* Cards Detalhados */}
         {tab === 0 && <DashboardCards />}
         {/* Tabela de Dados com filtros e exportação */}
