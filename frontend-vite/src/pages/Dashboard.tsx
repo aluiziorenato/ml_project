@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { Box, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Tabs, Tab, Typography } from "@mui/material";
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -18,32 +19,47 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import InfoIcon from '@mui/icons-material/Info';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+
+import Tooltip from '@mui/material/Tooltip';
+
+const iaModules = [
+  { label: 'Intenção Semântica', icon: <ScienceIcon />, page: 'intencao-semantica', desc: 'Análise semântica de intenção do usuário.' },
+  { label: 'Chatbot', icon: <SmartToyIcon />, page: 'chatbot', desc: 'Assistente conversacional inteligente.' },
+  { label: 'Detector de Tendências', icon: <TrendingUpIcon />, page: 'detector-tendencias', desc: 'Identificação automática de tendências de mercado.' },
+  { label: 'Otimização de ACOS', icon: <TuneIcon />, page: 'acos-management', desc: 'Gestão e otimização de ACOS para campanhas.' },
+  { label: 'Otimização de Campanhas', icon: <TuneIcon />, page: 'otimizacao-campanhas', desc: 'Ajuste dinâmico de campanhas de marketing.' },
+  { label: 'Predição de ROI', icon: <BarChartIcon />, page: 'roi-prediction', desc: 'Predição de retorno sobre investimento.' },
+  { label: 'Inteligência Competitiva', icon: <GroupWorkIcon />, page: 'competitor-intelligence', desc: 'Análise de concorrentes e mercado.' },
+  { label: 'SEO Visual', icon: <ScienceIcon />, page: 'visual-seo', desc: 'Análise visual de SEO para páginas.' },
+  { label: 'Otimização Dinâmica', icon: <TuneIcon />, page: 'dynamic-optimization', desc: 'Otimização automática de estratégias.' },
+  { label: 'Market Pulse', icon: <TrendingUpIcon />, page: 'market-pulse', desc: 'Monitoramento de pulso do mercado.' },
+  { label: 'Cross Platform', icon: <SmartToyIcon />, page: 'cross-platform', desc: 'Integração e análise multi-plataforma.' },
+  { label: 'IA Preditiva', icon: <ScienceIcon />, page: 'ai-predictive', desc: 'Modelos preditivos avançados.' },
+];
 
 const menuItems = [
-  { label: 'Dashboard', icon: <DashboardIcon />, page: 'dashboard' },
-  { label: 'Relatórios', icon: <BarChartIcon />, page: 'relatorios' },
-  { label: 'Configurações', icon: <SettingsIcon />, page: 'configuracoes' },
+  { label: 'Dashboard', icon: <DashboardIcon />, page: 'dashboard', desc: 'Visão geral do sistema.' },
+  { label: 'Relatórios', icon: <BarChartIcon />, page: 'relatorios', desc: 'Relatórios e gráficos.' },
+  { label: 'Configurações', icon: <SettingsIcon />, page: 'configuracoes', desc: 'Ajustes do sistema.' },
   { divider: true },
   { label: 'Inteligência Artificial', section: true },
-  { label: 'Intenção Semântica', icon: <ScienceIcon />, page: 'intencao-semantica' },
-  { label: 'Chatbot', icon: <SmartToyIcon />, page: 'chatbot' },
-  { label: 'Detector de Tendências', icon: <TrendingUpIcon />, page: 'detector-tendencias' },
-  { label: 'Otimização de ACOS', icon: <TuneIcon />, page: 'acos-management' },
-  { label: 'Otimização de Campanhas', icon: <TuneIcon />, page: 'otimizacao-campanhas' },
+  ...iaModules,
   { divider: true },
   { label: 'Mercado Livre', section: true },
-  { label: 'Produtos', icon: <StoreIcon />, page: 'produtos' },
-  { label: 'Anúncios', icon: <ListAltIcon />, page: 'anuncios' },
-  { label: 'Pedidos', icon: <ShoppingCartIcon />, page: 'pedidos' },
-  { label: 'Concorrentes', icon: <GroupWorkIcon />, page: 'concorrentes' },
-  { label: 'Dashboard de Produto', icon: <InfoIcon />, page: 'produto-dashboard' },
-  { label: 'Detalhe do Produto', icon: <InfoIcon />, page: 'produto-detalhe' },
+  { label: 'Produtos', icon: <StoreIcon />, page: 'produtos', desc: 'Gestão de produtos cadastrados.' },
+  { label: 'Anúncios', icon: <ListAltIcon />, page: 'anuncios', desc: 'Gerenciamento de anúncios ativos.' },
+  { label: 'Pedidos', icon: <ShoppingCartIcon />, page: 'pedidos', desc: 'Controle de pedidos realizados.' },
+  { label: 'Concorrentes', icon: <GroupWorkIcon />, page: 'concorrentes', desc: 'Monitoramento de concorrentes.' },
+  { label: 'Dashboard de Produto', icon: <InfoIcon />, page: 'produto-dashboard', desc: 'Visão detalhada de produto.' },
+  { label: 'Detalhe do Produto', icon: <InfoIcon />, page: 'produto-detalhe', desc: 'Informações completas do produto.' },
 ];
 
 const Dashboard: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tab, setTab] = useState(0);
   const [menuPage, setMenuPage] = useState('dashboard');
+  const navigate = useNavigate();
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', background: '#f5f6fa' }}>
@@ -65,15 +81,19 @@ const Dashboard: React.FC = () => {
                 <Typography key={idx} variant="caption" sx={{ color: '#90caf9', pl: 2, pt: 1, pb: 0.5 }}>{item.label}</Typography>
               );
               return (
-                <ListItemButton
-                  key={item.page}
-                  selected={menuPage === item.page}
-                  onClick={() => setMenuPage(item.page ?? '')}
-                  sx={{ borderRadius: 2, mb: 1 }}
-                >
-                  <ListItemIcon sx={{ color: '#fff' }}>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.label} />
-                </ListItemButton>
+                <Tooltip key={item.page} title={<span style={{ fontSize: 12, fontWeight: 400, color: '#e0e0e0' }}>{'desc' in item ? item.desc : ''}</span>} arrow placement="right">
+                  <ListItemButton
+                    selected={menuPage === item.page}
+                  onClick={() => {
+                    setMenuPage(item.page ?? '');
+                    if (item.page) navigate(`/${item.page}`);
+                  }}
+                    sx={{ borderRadius: 2, mb: 1 }}
+                  >
+                    <ListItemIcon sx={{ color: '#fff' }}>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.label} />
+                  </ListItemButton>
+                </Tooltip>
               );
             })}
           </List>
