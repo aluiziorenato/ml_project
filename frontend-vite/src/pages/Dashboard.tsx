@@ -108,7 +108,7 @@ const Dashboard: React.FC = () => {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Dashboard Community
+              Dashboard CortexPrime
             </Typography>
           </Toolbar>
         </AppBar>

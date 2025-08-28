@@ -46,6 +46,8 @@ export default function NovoAnuncioML() {
     warranty: "",
     sku: "",
     pictures: [{ url: "" }],
+    vendas: 120,
+    visitas: 350,
   });
   const [variations, setVariations] = useState<any[]>([]);
   const [categoryAttributes, setCategoryAttributes] = useState<any[]>(mockCategoryAttributes[categorias[0]] || []);
@@ -137,6 +139,10 @@ export default function NovoAnuncioML() {
     <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, p: 0, bgcolor: "#f7f7f7", borderRadius: 4, boxShadow: 3 }}>
       <Typography variant="h4" sx={{ mb: 3, fontWeight: 700, color: '#333', letterSpacing: 1, p: 3 }}>Novo Anúncio Mercado Livre</Typography>
       <form onSubmit={handleSubmit} style={{ background: '#fff', borderRadius: 8, padding: 0, boxShadow: '0 4px 16px #e0e0e0', display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 3, px: 2, pt: 2 }}>
+          <Typography variant="body2" sx={{ color: '#1976d2', fontWeight: 500 }}>Vendas: {form.vendas ?? 0}</Typography>
+          <Typography variant="body2" sx={{ color: '#388e3c', fontWeight: 500 }}>Visitas: {form.visitas ?? 0}</Typography>
+        </Box>
         {/* Seção: Fotos do Produto */}
         <Box sx={{ p: 3, mb: 3, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0057b8', fontSize: 18 }}>Fotos do Produto</Typography>
