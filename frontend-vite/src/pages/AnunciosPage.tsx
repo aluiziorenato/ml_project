@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import BoltIcon from '@mui/icons-material/Bolt';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import { Box, Grid, Typography, Button, Card, CardContent, CardActions, Avatar, Chip, Tooltip, Menu, MenuItem, Collapse, IconButton } from "@mui/material";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -80,6 +82,13 @@ export default function AnunciosPage() {
     <Box sx={{ maxWidth: 1200, mx: "auto", mt: 4, p: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Ícone CortexPrime */}
+          <Box sx={{ position: 'relative', width: 40, height: 40, mr: 2 }}>
+            <Box sx={{ background: '#1976d2', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 2 }}>
+              <PsychologyIcon sx={{ color: '#fff', fontSize: 28 }} />
+            </Box>
+            <BoltIcon sx={{ color: '#ffd600', fontSize: 18, position: 'absolute', right: 4, bottom: 4, opacity: 0.9 }} />
+          </Box>
           <IconButton size="small" onClick={() => navigate('/dashboard')} sx={{ mr: 1 }}>
             <Box sx={{ background: '#1976d2', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <DashboardIcon fontSize="small" sx={{ color: '#fff' }} />
