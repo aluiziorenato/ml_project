@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import { Box, Grid, Typography, Button, Card, CardContent, CardActions, Avatar, Chip, Tooltip, Menu, MenuItem, Collapse, IconButton } from "@mui/material";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
@@ -47,6 +49,8 @@ export default function AnunciosPage() {
   const [lista, setLista] = useState(anuncios);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [menuId, setMenuId] = useState<number | null>(null);
+  // Navegação para dashboard
+  const navigate = (window as any).navigate || (() => { window.location.href = '/dashboard'; });
 
   function handleMenuAbrir(event: React.MouseEvent<HTMLElement>, id: number) {
     setMenuAnchor(event.currentTarget);
@@ -75,7 +79,19 @@ export default function AnunciosPage() {
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", mt: 4, p: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600 }}>Anúncios Mercado Livre</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <IconButton size="small" onClick={() => navigate('/dashboard')} sx={{ mr: 1 }}>
+            <Box sx={{ background: '#1976d2', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DashboardIcon fontSize="small" sx={{ color: '#fff' }} />
+            </Box>
+          </IconButton>
+          <IconButton size="small" onClick={() => navigate('/anuncios')} sx={{ mr: 1 }}>
+            <Box sx={{ background: '#1976d2', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ListAltIcon fontSize="small" sx={{ color: '#fff' }} />
+            </Box>
+          </IconButton>
+          <Typography variant="h5" sx={{ fontWeight: 600 }}>Anúncios Mercado Livre</Typography>
+        </Box>
         <Button variant="contained" startIcon={<AddCircleOutlineIcon />} onClick={handleCriar} sx={{ fontWeight: 500 }}>Criar Anúncio</Button>
       </Box>
       <Box sx={{ overflowX: 'auto', bgcolor: '#fff', borderRadius: 2, boxShadow: 1 }}>
@@ -164,7 +180,7 @@ export default function AnunciosPage() {
                     <Tooltip title="Editar anúncio" arrow>
                       <Button size="small" startIcon={<EditIcon />} onClick={() => handleEditar(anuncio.id)} sx={{ fontSize: 12, minWidth: 0, px: 1 }}>Editar</Button>
                     </Tooltip>
-                    <Tooltip title="Otimizar anúncio com IA" arrow>
+                    <Tooltip title="Otimiza automaticamente o título, descrição e palavras-chave do anúncio usando IA para aumentar relevância e vendas." arrow>
                       <Button size="small" startIcon={<AutoFixHighIcon />} onClick={() => handleOtimizar(anuncio.id)} sx={{ fontSize: 12, minWidth: 0, px: 1, ml: 1 }}>Otimizar</Button>
                     </Tooltip>
                     <Button size="small" sx={{ minWidth: 0, p: 0, ml: 1 }} onClick={e => handleMenuAbrir(e, anuncio.id)}>
@@ -191,13 +207,15 @@ export default function AnunciosPage() {
                         <Box sx={{ p: 2 }}>
                           <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Variações</Typography>
                           {anuncio.variacoes.map((v: any, idx: any) => (
-                            <Box key={idx} sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1, borderBottom: '1px solid #eee', pb: 1 }}>
-                              <Typography sx={{ minWidth: 80, fontSize: 13, color: '#222' }}>SKU: {'-'}</Typography>
-                              <Typography sx={{ minWidth: 80, fontSize: 13, color: '#222' }}>Preço: R$ {(v.preco ?? anuncio.preco).toFixed(2)}</Typography>
-                              <Typography sx={{ minWidth: 80, fontSize: 13, color: '#222' }}>Estoque: {v.estoque ?? anuncio.estoque ?? '-'}</Typography>
-                              <Typography sx={{ minWidth: 80, fontSize: 13, color: '#222' }}>Vendas: {v.vendas ?? anuncio.vendas ?? '-'}</Typography>
-                              <Typography sx={{ minWidth: 80, fontSize: 13, color: '#222' }}>Visitas: {v.visitas ?? anuncio.visitas ?? '-'}</Typography>
-                              <Typography sx={{ minWidth: 80, fontSize: 13, color: '#222' }}>Variações: {anuncio.variacoes.length}</Typography>
+                            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 1, borderBottom: '1px solid #eee', pb: 1, gap: 2 }}>
+                              <img src={anuncio.imagem} alt={anuncio.titulo} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, marginRight: 8 }} />
+                              <Typography sx={{ minWidth: 80, fontSize: 13, color: '#222', fontWeight: 500 }}>{anuncio.titulo}</Typography>
+                              <Typography sx={{ minWidth: 60, fontSize: 13, color: '#222' }}>Preço: R$ {(v.preco ?? anuncio.preco).toFixed(2)}</Typography>
+                              <Typography sx={{ minWidth: 60, fontSize: 13, color: '#222' }}>Estoque: {v.estoque ?? anuncio.estoque ?? '-'}</Typography>
+                              <Typography sx={{ minWidth: 60, fontSize: 13, color: '#222' }}>Vendas: {v.vendas ?? anuncio.vendas ?? '-'}</Typography>
+                              <Typography sx={{ minWidth: 60, fontSize: 13, color: '#222' }}>Visitas: {v.visitas ?? anuncio.visitas ?? '-'}</Typography>
+                              <Typography sx={{ minWidth: 60, fontSize: 13, color: '#222' }}>Variações: {anuncio.variacoes.length}</Typography>
+                              {/* SKU pode ser adicionado se existir no mock futuramente */}
                             </Box>
                           ))}
                         </Box>

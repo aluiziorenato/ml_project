@@ -310,7 +310,8 @@ export default function NovoAnuncioML() {
         </Box>
         {/* Botão de Salvar */}
         <Box sx={{ p: 3, mb: 3, bgcolor: '#fff', borderRadius: 4, boxShadow: 1, textAlign: 'center' }}>
-          <Button variant="contained" color="primary" type="submit" sx={{ fontWeight: 700, mt: 3, bgcolor: '#00a650', fontSize: 16, borderRadius: 2, boxShadow: '0 2px 8px #b2dfdb' }}>Salvar Anúncio</Button>
+          <Button variant="contained" color="primary" type="submit" sx={{ fontWeight: 700, mt: 3, bgcolor: '#00a650', fontSize: 16, borderRadius: 2, boxShadow: '0 2px 8px #b2dfdb', mr: 2 }}>Salvar Anúncio</Button>
+          <Button variant="contained" color="primary" sx={{ fontWeight: 700, mt: 3, bgcolor: '#1976d2', fontSize: 16, borderRadius: 2, boxShadow: '0 2px 8px #b2dfdb' }} onClick={() => alert('Anúncio enviado para o Mercado Livre!')}>Enviar para Mercado Livre</Button>
         </Box>
       </form>
     </Box>
