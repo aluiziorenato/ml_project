@@ -6,6 +6,7 @@ import DashboardPage from './pages/Dashboard';
 import AnunciosPage from './pages/AnunciosPage';
 import ProductsPage from './pages/Produtos';
 import IntencaoSemantica from './pages/IntencaoSemantica';
+import IntencoesBuscaPage from './pages/IntencoesBuscaPage';
 import Chatbot from './pages/Chatbot';
 import DetectorTendencias from './pages/DetectorTendencias';
 import ACOSManagement from './pages/ACOSManagement';
@@ -32,6 +33,7 @@ function App() {
         <Route path="/produto-detalhe" element={<ProdutoDetalhe />} />
         <Route path="/novo-anuncio" element={<NovoAnuncioML />} />
         <Route path="/metricas" element={<MetricasPage />} />
+        <Route path="/intencoes-busca" element={<IntencoesBuscaPage />} />
       </Routes>
     </BrowserRouter>
   );

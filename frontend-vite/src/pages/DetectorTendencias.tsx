@@ -4,12 +4,12 @@ type DataPonto = { ds: string; y: number };
 type MockData = Record<Categoria, DataPonto[]>;
 type ProdutosMock = Record<Categoria, Produto[]>;
 type MockDataProduto = Record<number, DataPonto[]>;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, Typography, Select, MenuItem, FormControl, InputLabel, Button, Grid, Box, TextField, Stack } from '@mui/material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { PieChart, Pie, Cell } from 'recharts';
 
-// Dados mocados por categoria
+// Dados mocados por categoria (fallback)
 const mockData: MockData = {
   Eletrônicos: [
     { ds: '2025-08-01', y: 120 },
@@ -57,7 +57,6 @@ const periodos: { label: string; value: number | 'custom' }[] = [
   { label: '60 dias', value: 60 },
   { label: 'Personalizado', value: 'custom' },
 ];
-
 const coresPie: string[] = [
   '#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28EFF', '#FF6F91', '#FFD700', '#00BFFF', '#FF6347', '#32CD32'
 ];
@@ -68,6 +67,7 @@ function filtrarPorPeriodo(
   customStart?: string,
   customEnd?: string
 ): DataPonto[] {
+  if (!Array.isArray(data) || data.length === 0) return [];
   if (dias === 'custom' && customStart && customEnd) {
     return data.filter(
       (item: DataPonto) => item.ds >= customStart && item.ds <= customEnd
@@ -85,15 +85,43 @@ function calcularTendencia(data: DataPonto[]): 'Alta' | 'Queda' | 'Estável' {
 }
 
 export default function DetectorTendencias() {
-  const [categoria, setCategoria] = useState(categorias[0]);
-  const [periodo, setPeriodo] = useState('7'); // tipo string
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
+  // Declarar todos os estados antes de qualquer uso
+  const [categoria, setCategoria] = useState<Categoria>(categorias[0]);
+  const [periodo, setPeriodo] = useState<string>('7');
+  const [customStart, setCustomStart] = useState<string>('');
+  const [customEnd, setCustomEnd] = useState<string>('');
   const [produtoId, setProdutoId] = useState<number | null>(null);
-  const [termo, setTermo] = useState('');
+  const [termo, setTermo] = useState<string>('');
 
-  // Produtos mocados por categoria (agora simuláveis)
-  const [produtosMock, setProdutosMock] = useState({
+  // Carregar dados do mock API ao iniciar e ao mudar filtros
+  useEffect(() => {
+    async function fetchAPI() {
+      try {
+        const resProdutos = await fetch(`/api/produtos?categoria=${encodeURIComponent(categoria)}`);
+        const produtosData = await resProdutos.json();
+        if (produtosData && typeof produtosData === 'object') {
+          setProdutosMock(produtosData);
+        }
+      } catch (e) {}
+      try {
+        let urlTendencias = `/api/tendencias?categoria=${encodeURIComponent(categoria)}`;
+        if (produtoId) urlTendencias += `&produtoId=${produtoId}`;
+        if (periodo) urlTendencias += `&periodo=${periodo}`;
+        if (customStart) urlTendencias += `&customStart=${customStart}`;
+        if (customEnd) urlTendencias += `&customEnd=${customEnd}`;
+        if (termo) urlTendencias += `&termo=${encodeURIComponent(termo)}`;
+        const resTendencias = await fetch(urlTendencias);
+        const tendenciasData = await resTendencias.json();
+        if (tendenciasData && typeof tendenciasData === 'object') {
+          setMockDataState(tendenciasData);
+        }
+      } catch (e) {}
+    }
+    fetchAPI();
+  }, [categoria, produtoId, periodo, customStart, customEnd, termo]);
+
+  // Produtos mocados por categoria (simuláveis)
+  const [produtosMock, setProdutosMock] = useState<ProdutosMock>({
     Eletrônicos: [
       { id: 1, titulo: 'Smartphone X', preco: 2499.99, vendas: 120, imagem: 'https://placehold.co/80x80?text=Smartphone' },
       { id: 2, titulo: 'Notebook Pro', preco: 4999.99, vendas: 80, imagem: 'https://placehold.co/80x80?text=Notebook' },
@@ -116,8 +144,8 @@ export default function DetectorTendencias() {
   });
 
   // Dados dos gráficos simuláveis
-  const [mockDataState, setMockDataState] = useState(mockData);
-  const [mockDataProdutoState, setMockDataProdutoState] = useState({
+  const [mockDataState, setMockDataState] = useState<MockData>(mockData);
+  const [mockDataProdutoState, setMockDataProdutoState] = useState<MockDataProduto>(() => ({
     10: [
       { ds: '2025-08-01', y: 40 },
       { ds: '2025-08-02', y: 45 },
@@ -142,67 +170,65 @@ export default function DetectorTendencias() {
       { ds: '2025-08-09', y: 50 },
       { ds: '2025-08-10', y: 52 },
     ],
-  });
+  }));
 
   // Função para simular dados novos
-  function simularNovosDados() {
-    // Gera vendas aleatórias para cada produto
-    setProdutosMock((old: ProdutosMock) => {
-      const novo: ProdutosMock = { Eletrônicos: [], Moda: [], Casa: [] };
-      (Object.keys(old) as Categoria[]).forEach(cat => {
-        novo[cat] = old[cat].map((prod: Produto) => ({
-          ...prod,
-          vendas: Math.floor(Math.random() * 200 + 30),
-          preco: Number((prod.preco * (0.95 + Math.random() * 0.1)).toFixed(2)),
-        }));
+  async function simularNovosDados() {
+    // Chama endpoint de simulação, atualiza dados
+    try {
+      const resSimulacao = await fetch(`/api/tendencias?categoria=${encodeURIComponent(categoria)}&produtoId=${produtoId || ''}&periodo=${periodo}&customStart=${customStart}&customEnd=${customEnd}&termo=${encodeURIComponent(termo)}&simular=1`);
+      const tendenciasData = await resSimulacao.json();
+      if (tendenciasData && typeof tendenciasData === 'object') {
+        setMockDataState(tendenciasData);
+      }
+    } catch (e) {
+      // fallback para simulação local
+      setMockDataState((old) => {
+        const novo: MockData = { Eletrônicos: [], Moda: [], Casa: [] };
+        (Object.keys(old) as Categoria[]).forEach(cat => {
+          novo[cat] = old[cat].map((item) => ({
+            ...item,
+            y: Math.floor(Math.random() * 250 + 30),
+          }));
+        });
+        return novo;
       });
-      return novo;
-    });
-    // Simula dados dos gráficos de categoria
-    setMockDataState((old: MockData) => {
-      const novo: MockData = { Eletrônicos: [], Moda: [], Casa: [] };
-      (Object.keys(old) as Categoria[]).forEach(cat => {
-        novo[cat] = old[cat].map((item: DataPonto, idx: number) => ({
-          ...item,
-          y: Math.floor(Math.random() * 250 + 30),
-        }));
-      });
-      return novo;
-    });
-    // Simula dados dos gráficos de produto
-    setMockDataProdutoState((old: MockDataProduto) => {
+    }
+    // Simula dados dos gráficos de produto localmente
+    setMockDataProdutoState((old) => {
       const novo: MockDataProduto = {};
-      Object.keys(old).forEach((prodId: string) => {
-        novo[Number(prodId)] = old[Number(prodId)].map((item: DataPonto, idx: number) => ({
+      Object.keys(old).forEach((prodId) => {
+        novo[Number(prodId)] = old[Number(prodId)].map((item) => ({
           ...item,
           y: Math.floor(Math.random() * 100 + 10),
         }));
       });
-      return novo;
+      return { ...old, ...novo };
     });
   }
 
-  const produtos: Produto[] = produtosMock[categoria];
+  // Fallback seguro para produtos
+  const produtos: Produto[] = Array.isArray(produtosMock[categoria]) ? produtosMock[categoria] : [];
   useEffect(() => {
-    setProdutoId(produtos[0]?.id ?? null);
-  }, [categoria]);
-  const produtoSelecionado: Produto = produtos.find((p: Produto) => p.id === produtoId) || produtos[0];
+    if (produtos.length > 0) {
+      setProdutoId(produtos[0]?.id ?? null);
+    } else {
+      setProdutoId(null);
+    }
+  }, [categoria, produtos]);
+  const produtoSelecionado: Produto | undefined = produtos.find((p) => p.id === produtoId) || produtos[0];
 
-  // Mock de dados por produto
-  // Dados dos gráficos de produto agora simuláveis
   const mockDataProduto: MockDataProduto = mockDataProdutoState;
-
-  // Dados do gráfico: prioriza dados do produto, senão da categoria
-  const data: DataPonto[] = React.useMemo(() => {
-    if (mockDataProduto[produtoSelecionado.id as number]) return mockDataProduto[produtoSelecionado.id as number];
+  const data: DataPonto[] = useMemo(() => {
+    if (produtoSelecionado && mockDataProduto[produtoSelecionado.id]) return mockDataProduto[produtoSelecionado.id];
     return mockDataState[categoria];
-  }, [categoria, produtoSelecionado.id, mockDataProduto, mockDataState]);
+  }, [categoria, produtoSelecionado, mockDataProduto, mockDataState]);
 
-  const dadosFiltrados: DataPonto[] = React.useMemo(() => {
+  const dadosFiltrados: DataPonto[] = useMemo(() => {
     let periodoValor: number | 'custom' = periodo === 'custom' ? 'custom' : Number(periodo);
     return filtrarPorPeriodo(data, periodoValor, customStart, customEnd);
   }, [data, periodo, customStart, customEnd]);
-  const tendencia: 'Alta' | 'Queda' | 'Estável' = React.useMemo(() => calcularTendencia(dadosFiltrados), [dadosFiltrados]);
+  const tendencia: 'Alta' | 'Queda' | 'Estável' = useMemo(() => calcularTendencia(dadosFiltrados), [dadosFiltrados]);
 
   const tendenciaCor: Record<'Alta' | 'Queda' | 'Estável', string> = {
     Alta: 'green',
@@ -210,7 +236,6 @@ export default function DetectorTendencias() {
     Estável: 'gray',
   };
 
-  // Mock de insights IA
   type InsightIA = { titulo: string; descricao: string; icone: string };
   const insightsIA: InsightIA[] = [
     {
@@ -267,7 +292,14 @@ export default function DetectorTendencias() {
   ];
 
   return (
-    <Box sx={{ width: '100%', maxWidth: 1100, mx: 'auto', p: 3, bgcolor: '#fafbfc', borderRadius: 3, boxShadow: 2, minHeight: 700, overflow: 'hidden', fontSize: '12px' }}>
+      <Box sx={{ width: '100%', maxWidth: 1100, mx: 'auto', p: 3, bgcolor: '#fafbfc', borderRadius: 3, boxShadow: 2, minHeight: 700, overflow: 'hidden', fontSize: '12px' }}>
+      {/* Mensagem amigável se não houver produtos */}
+      {produtos.length === 0 && (
+        <Box sx={{ p: 2, bgcolor: '#fff3f3', borderRadius: 2, mb: 2, textAlign: 'center', color: '#c00', fontWeight: 500 }}>
+          Nenhum produto encontrado para a categoria selecionada.<br />
+          Verifique se a API está rodando corretamente ou tente outra categoria.
+        </Box>
+      )}
       {/* Ícone de voltar para a dashboard no topo */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
         <Button
@@ -310,7 +342,11 @@ export default function DetectorTendencias() {
           <FormControl fullWidth sx={{ fontSize: '12px' }}>
             <InputLabel sx={{ fontSize: '12px', height: 32, minHeight: 32 }}>Subcategoria</InputLabel>
             <Select
-              value={produtoId || produtos[0]?.id || ''}
+              value={
+                produtos.length > 0 && produtos.some(p => p.id === produtoId)
+                  ? produtoId
+                  : produtos[0]?.id || ''
+              }
               label="Subcategoria"
               onChange={(e) => setProdutoId(Number(e.target.value))}
               sx={{ fontSize: '12px', height: 32, minHeight: 32 }}
@@ -408,8 +444,9 @@ export default function DetectorTendencias() {
                 cy="50%"
                 outerRadius={100}
                 labelLine={false}
-                label={({ percent, x, y, index }) => {
-                  function getContrastColor(hex) {
+                label={(props: { percent?: number; x?: number; y?: number; index?: number }) => {
+                  const { percent = 0, x = 0, y = 0, index = 0 } = props;
+                  function getContrastColor(hex: string): string {
                     if (!hex) return '#000';
                     hex = hex.replace('#', '');
                     const r = parseInt(hex.substring(0,2), 16);

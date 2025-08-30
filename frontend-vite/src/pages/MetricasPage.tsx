@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { Grid, Typography, Card, CardContent, ButtonGroup, Button, Box, Divider } from "@mui/material";
+import { Grid, Typography, Card, CardContent, ButtonGroup, Button, Box, Divider, IconButton, Tooltip as MuiTooltip } from "@mui/material";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useNavigate } from 'react-router-dom';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import { BarChart, Bar, Cell } from 'recharts';
 
 export default function MetricasPage() {
+  const navigate = useNavigate();
   // Mock de dados para diferentes intervalos
   const mockMetricas = {
     7: [
@@ -132,6 +135,13 @@ export default function MetricasPage() {
 
   return (
     <Grid container direction="column" alignItems="center" sx={{ maxWidth: 1100, mx: "auto", mt: 4, p: 2, width: '100%' }}>
+      <Grid item sx={{ width: '100%', mb: 2 }}>
+        <MuiTooltip title="Voltar para o Dashboard">
+          <IconButton onClick={() => navigate('/dashboard')} sx={{ bgcolor: '#f5f5f5', mr: 1 }}>
+            <ArrowBackIcon sx={{ color: '#1976d2', fontSize: 28 }} />
+          </IconButton>
+        </MuiTooltip>
+      </Grid>
       <Grid item sx={{ width: '100%' }}>
         <Grid container alignItems="center" sx={{ mb: 3 }}>
           <BarChartIcon sx={{ color: '#1976d2', fontSize: 32, mr: 2 }} />

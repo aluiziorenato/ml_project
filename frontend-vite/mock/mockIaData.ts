@@ -1,0 +1,27 @@
+// Mock de dados para IA - 100 linhas
+export const mockIaData = Array.from({ length: 100 }, (_, i) => ({
+  id: `MLB${1000 + i}`,
+  nome: `Produto ${String.fromCharCode(65 + (i % 26))}${i}`,
+  vendas: Math.floor(Math.random() * 200 + 10),
+  visitas: Math.floor(Math.random() * 2000 + 100),
+  estoque: Math.floor(Math.random() * 100 + 1),
+  preco: parseFloat((Math.random() * 500 + 20).toFixed(2)),
+  desconto: Math.random() > 0.7 ? Math.floor(Math.random() * 30) : 0,
+  roi: parseFloat((Math.random() * 4 + 1).toFixed(2)),
+  acos: parseFloat((Math.random() * 0.3 + 0.05).toFixed(2)),
+  perguntas: Math.floor(Math.random() * 20),
+  respostas: Math.floor(Math.random() * 20),
+  avaliacao: parseFloat((Math.random() * 2 + 3).toFixed(1)),
+  status: ["ativo", "pausado", "finalizado"][Math.floor(Math.random() * 3)],
+  seguidores: Math.floor(Math.random() * 1000),
+  reclamacoes: Math.floor(Math.random() * 5),
+  devolucoes: Math.floor(Math.random() * 5),
+  canal: ["app", "web", "mobile"][Math.floor(Math.random() * 3)],
+  concorrentes: Math.floor(Math.random() * 10),
+  relevancia: Math.floor(Math.random() * 100),
+  historicoPreco: Array.from({ length: 12 }, (_, m) => ({
+    mes: m + 1,
+    preco: parseFloat((Math.random() * 500 + 20).toFixed(2)),
+  })),
+  imagem: `https://picsum.photos/seed/MLB${1000 + i}/40/40`,
+}));

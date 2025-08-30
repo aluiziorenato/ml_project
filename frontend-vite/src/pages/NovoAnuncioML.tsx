@@ -1,6 +1,9 @@
 import React, { useState } from "react";
-import { Box, Grid, TextField, Button, Typography, MenuItem, Divider, Tooltip } from "@mui/material";
+import { Box, TextField, Button, Typography, MenuItem, Divider, Tooltip } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import KeywordSuggestionModal from "../components/KeywordSuggestionModal";
+import VariationModal, { VariationData } from "../components/VariationModal";
 
 const categorias = ["MLB5726", "MLB1055", "MLB1430", "MLB1648", "MLB1071", "MLB1246", "MLB1743"];
 const categoriaLabels = {
@@ -12,9 +15,17 @@ const categoriaLabels = {
   "MLB1246": "Veículos",
   "MLB1743": "Beleza"
 };
-const statusList = ["active", "paused", "closed"];
+const statusList = ["Ativo", "Pausado", "Finalizado"];
+const tipoAnuncioList = ["Clássico", "Premium"];
 const fiscalTypes = ["Simples Nacional", "Lucro Presumido", "Lucro Real"];
-const mockCategoryAttributes = {
+type CategoryAttribute = {
+  id: string;
+  name: string;
+  required: boolean;
+  type: string;
+  allowed_values?: string[];
+};
+const mockCategoryAttributes: Record<string, CategoryAttribute[]> = {
   MLB5726: [
     { id: "brand", name: "Marca", required: true, type: "string" },
     { id: "model", name: "Modelo", required: true, type: "string" },
@@ -25,16 +36,29 @@ const mockCategoryAttributes = {
 };
 
 export default function NovoAnuncioML() {
-  const [showKeywords, setShowKeywords] = useState<{ type: "title" | "description" | null, keywords: { word: string, score: number, tail?: 'long' | 'medium' }[] }>({ type: null, keywords: [] });
-  const [selectedLong, setSelectedLong] = useState<string | null>(null);
-  const [selectedMedium, setSelectedMedium] = useState<string | null>(null);
+  // Estado para abrir/fechar o modal de sugestão
+  // Estado para modal de categoria
+  const [openCategoryModal, setOpenCategoryModal] = useState(false);
+  const [selectedCategoryPath, setSelectedCategoryPath] = useState<string[]>([]);
+  const [openKeywordModal, setOpenKeywordModal] = useState(false);
+  // Estado para armazenar seleção do modal
+  const [selectedKeywords, setSelectedKeywords] = useState<{ title: string; longTail: string; mediumTail: string } | null>(null);
+  const [semanticIa, setSemanticIa] = useState<{ texto: string; keywords: string[]; recomendacoes: string[]; titulos?: string[] } | null>(null);
+  const [semanticLoading, setSemanticLoading] = useState(false);
+  const [semanticError, setSemanticError] = useState<string | null>(null);
+  const [showSemanticCard, setShowSemanticCard] = useState(false);
+  const [seoIa, setSeoIa] = useState<any>(null);
+  const [seoLoading, setSeoLoading] = useState(false);
+  const [seoError, setSeoError] = useState<string | null>(null);
+  const [showSeoCard, setShowSeoCard] = useState(false);
   const [form, setForm] = useState({
     title: "",
     category_id: categorias[0],
     price: "",
     currency_id: "BRL",
     available_quantity: "",
-    status: "active",
+    status: "Ativo",
+    listing_type_id: "Clássico",
     description: "",
     condition: "new",
     fiscal_type: "",
@@ -45,16 +69,71 @@ export default function NovoAnuncioML() {
     model: "",
     warranty: "",
     sku: "",
-    pictures: [{ url: "" }],
-    vendas: 120,
-    visitas: 350,
+    pictures: [], // Agora armazena múltiplas imagens
   });
+  // Estado para imagens do produto (cache local)
+  const [productImages, setProductImages] = useState<Array<{ url: string; file?: File }>>([]);
+  // Estado para modal de upload de imagens
+  const [openImageModal, setOpenImageModal] = useState(false);
+  // Função para adicionar imagem
+  function handleAddImage(img: { url: string; file?: File }) {
+    if (productImages.length >= 10) return;
+    setProductImages(prev => [...prev, img]);
+  }
+  // Função para remover imagem
+  function handleRemoveImage(idx: number) {
+    setProductImages(prev => prev.filter((_, i) => i !== idx));
+  }
+  // Função para reordenar imagens (drag-and-drop)
+  function handleReorderImages(newOrder: Array<{ url: string; file?: File }>) {
+    setProductImages(newOrder);
+  }
+  // Função para limpar todas as imagens
+  function handleClearImages() {
+    setProductImages([]);
+  }
   const [variations, setVariations] = useState<any[]>([]);
-  const [categoryAttributes, setCategoryAttributes] = useState<any[]>(mockCategoryAttributes[categorias[0]] || []);
+  const [openVariationModal, setOpenVariationModal] = useState(false);
+  const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>(mockCategoryAttributes[categorias[0]] || []);
+
+  async function fetchSemanticIa(texto: string) {
+    setSemanticLoading(true);
+    setSemanticError(null);
+    try {
+      const res = await fetch("/meli/questions_service/ai_suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto })
+      });
+      if (!res.ok) throw new Error("Erro ao consultar IA Semântica");
+      const data = await res.json();
+      // Adapta o retorno para o formato esperado pelo card lateral
+      setSemanticIa({
+        texto: data.texto ?? "",
+        keywords: Array.isArray(data.keywords) ? data.keywords : [],
+        recomendacoes: Array.isArray(data.recomendacoes) ? data.recomendacoes : [],
+        titulos: Array.isArray(data.titulos) ? data.titulos : []
+      });
+      setShowSemanticCard(true);
+    } catch (err) {
+      setSemanticError("Falha ao buscar sugestão semântica: " + (err instanceof Error ? err.message : String(err)));
+      setSemanticIa(null);
+      setShowSemanticCard(true);
+    } finally {
+      setSemanticLoading(false);
+    }
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === "title") {
+      if (value.length > 0) {
+        fetchSemanticIa(value);
+      } else {
+        setShowSemanticCard(false);
+      }
+    }
   }
   function handleCategoryChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { value } = e.target;
@@ -65,7 +144,22 @@ export default function NovoAnuncioML() {
     setForm((prev) => ({ ...prev, [attrId]: value }));
   }
   function addVariation() {
-    setVariations((prev) => [...prev, { attributes: {}, price: '', available_quantity: '', picture_ids: [] }]);
+    setOpenVariationModal(true);
+  }
+
+  function handleSaveVariation(data: VariationData) {
+    setVariations((prev) => [
+      ...prev,
+      {
+        attributes: {},
+        price: data.price,
+        available_quantity: data.available_quantity,
+        picture_ids: data.picture_urls.map(img => img.url),
+        ean: data.ean,
+        seller_custom_field: data.seller_custom_field,
+      }
+    ]);
+    setOpenVariationModal(false);
   }
   function handleVariationChange(index: number, attrId: string, value: string) {
     setVariations((prev) => {
@@ -81,154 +175,201 @@ export default function NovoAnuncioML() {
       return updated;
     });
   }
-  function optimize(field: "title" | "description") {
-    if (field === "title") {
-      setShowKeywords({
-        type: field,
-        keywords: [
-          { word: "Novo", score: 0.98 },
-          { word: "Original", score: 0.95 },
-          { word: "Promoção", score: 0.93 },
-          { word: "Garantia", score: 0.91 },
-          { word: "Frete grátis", score: 0.89 }
-        ]
+  async function optimize(field: "title" | "description") {
+    setSeoLoading(true);
+    setSeoError(null);
+    try {
+      const res = await fetch("/api/seo_intelligence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          texto: field === "title" ? form.title : form.description,
+          tipo: field
+        })
       });
-    } else {
-      setShowKeywords({
-        type: field,
-        keywords: [
-          // Long tail
-          { word: "Capa protetora para notebook 15.6 polegadas resistente à água", score: 0.97, tail: 'long' },
-          { word: "Bolsa térmica fitness com compartimento para marmita", score: 0.96, tail: 'long' },
-          { word: "Fone bluetooth com cancelamento de ruído e microfone embutido", score: 0.95, tail: 'long' },
-          { word: "Tênis esportivo masculino para corrida leve e confortável", score: 0.94, tail: 'long' },
-          { word: "Relógio digital resistente à água com pulseira de silicone", score: 0.93, tail: 'long' },
-          // Medium tail
-          { word: "Bolsa térmica fitness", score: 0.92, tail: 'medium' },
-          { word: "Fone bluetooth com microfone", score: 0.91, tail: 'medium' },
-          { word: "Tênis esportivo masculino", score: 0.90, tail: 'medium' },
-          { word: "Relógio digital resistente à água", score: 0.89, tail: 'medium' },
-          { word: "Capa protetora para notebook", score: 0.88, tail: 'medium' }
-        ]
-      });
-      setSelectedLong(null);
-      setSelectedMedium(null);
+      if (!res.ok) throw new Error("Erro ao consultar IA SEO");
+      const data = await res.json();
+      setSeoIa(data);
+      setShowSeoCard(true);
+    } catch (err) {
+      setSeoError("Falha ao buscar sugestão SEO: " + (err instanceof Error ? err.message : String(err)));
+      setSeoIa(null);
+      setShowSeoCard(true);
+    } finally {
+      setSeoLoading(false);
     }
-  }
-  function handleKeywordSelect(keyword: string) {
-    setSelectedKeywords((prev) =>
-      prev.includes(keyword)
-        ? prev.filter((k) => k !== keyword)
-        : [...prev, keyword]
-    );
-  }
-  function applyKeywords() {
-    if (showKeywords.type === "title") {
-      setForm((prev) => ({ ...prev, title: prev.title + " " + selectedKeywords.join(" ") }));
-    } else if (showKeywords.type === "description") {
-      setForm((prev) => ({ ...prev, description: prev.description + " " + selectedKeywords.join(" ") }));
-    }
-    setShowKeywords({ type: null, keywords: [] });
-    setSelectedKeywords([]);
   }
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     alert("Anúncio salvo com sucesso!");
   }
+  // Handler para receber seleção do modal
+  async function handleKeywordSelect(selected: { title: string; longTail: string; mediumTail: string }) {
+    setSelectedKeywords(selected);
+    // Integração direta com IA SEO Intelligence
+    setSeoLoading(true);
+    setSeoError(null);
+    try {
+      const res = await fetch("/api/seo_intelligence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keywords: [selected.title, selected.longTail, selected.mediumTail],
+          tipo: "description"
+        })
+      });
+      if (!res.ok) throw new Error("Erro ao consultar IA SEO Intelligence");
+      const data = await res.json();
+      setSeoIa(data);
+      setShowSeoCard(true);
+    } catch (err) {
+      setSeoError("Falha ao buscar sugestão SEO: " + (err instanceof Error ? err.message : String(err)));
+      setSeoIa(null);
+      setShowSeoCard(true);
+    } finally {
+      setSeoLoading(false);
+    }
+  }
   return (
-    <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, p: 0, bgcolor: "#f7f7f7", borderRadius: 4, boxShadow: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: 700, color: '#333', letterSpacing: 1, p: 3 }}>Novo Anúncio Mercado Livre</Typography>
-      <form onSubmit={handleSubmit} style={{ background: '#fff', borderRadius: 8, padding: 0, boxShadow: '0 4px 16px #e0e0e0', display: 'flex', flexDirection: 'column', gap: 32 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 3, px: 2, pt: 2 }}>
-          <Typography variant="body2" sx={{ color: '#1976d2', fontWeight: 500 }}>Vendas: {form.vendas ?? 0}</Typography>
-          <Typography variant="body2" sx={{ color: '#388e3c', fontWeight: 500 }}>Visitas: {form.visitas ?? 0}</Typography>
-        </Box>
+    <Box sx={{ maxWidth: 1000, mx: 'auto', mt: 2, p: 0, bgcolor: "#f7f7f7", borderRadius: 4, boxShadow: 3 }}>
+      <Typography variant="h4" sx={{ mb: 2, fontWeight: 700, color: '#333', letterSpacing: 1, p: 3 }}>Novo Anúncio Mercado Livre</Typography>
+      <form onSubmit={handleSubmit} style={{ background: '#fff', borderRadius: 8, padding: 0, boxShadow: '0 4px 16px #e0e0e0', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Exclusivo para cadastro de produtos: não exibe vendas nem visitas */}
+        {/* Card lateral IA Semântica */}
+        {showSemanticCard && (
+          <Box sx={{ position: 'fixed', top: 100, right: 40, width: 370, maxHeight: 420, overflowY: 'auto', bgcolor: '#fff', borderRadius: 3, boxShadow: 4, p: 3, zIndex: 10 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1976d2', mb: 2 }}>
+              Sugestão Semântica para o Título
+            </Typography>
+            {semanticLoading && <Typography variant="body2" sx={{ color: '#888' }}>Carregando...</Typography>}
+            {semanticError && <Typography variant="body2" sx={{ color: 'red', mb: 2 }}>{semanticError}</Typography>}
+            {semanticIa && (
+              <>
+                {semanticIa.texto && <Typography variant="body2" sx={{ fontWeight: 600, color: '#333', mb: 2 }}>{semanticIa.texto}</Typography>}
+                {semanticIa.keywords && semanticIa.keywords.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                    {semanticIa.keywords.map((kw: string, idx: number) => (
+                      <Button key={idx} variant="outlined" color="primary" sx={{ mb: 1, fontWeight: 600 }}>{kw}</Button>
+                    ))}
+                  </Box>
+                )}
+                {semanticIa.recomendacoes && semanticIa.recomendacoes.length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>Recomendações:</Typography>
+                    {semanticIa.recomendacoes.map((rec: string, idx: number) => (
+                      <Button key={idx} variant="text" color="secondary" sx={{ mr: 1, mb: 1 }}>{rec}</Button>
+                    ))}
+                  </Box>
+                )}
+        {semanticIa.titulos && semanticIa.titulos.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>Exemplos de títulos para Moda:</Typography>
+                    <Box sx={{ maxHeight: 180, overflowY: 'auto', bgcolor: '#f5f5f5', borderRadius: 2, p: 2, boxShadow: 1 }}>
+                      {semanticIa.titulos.map((titulo: string, idx: number) => (
+                        <Typography key={idx} variant="body2" sx={{ color: '#333', mb: 0.5 }}>{idx + 1}. {titulo}</Typography>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </>
+            )}
+          </Box>
+        )}
         {/* Seção: Fotos do Produto */}
-        <Box sx={{ p: 3, mb: 3, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
+        <Box sx={{ p: 2, mb: 2, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0057b8', fontSize: 18 }}>Fotos do Produto</Typography>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} sm={8}>
-              <TextField label="URL da Foto Principal" name="pictures[0].url" value={form.pictures[0].url} onChange={handleChange} fullWidth helperText="Cole o link da imagem do produto." />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Button variant="outlined" size="small" sx={{ fontSize: 12, mt: 1 }} startIcon={<AutoFixHighIcon />}>Ler imagem para otimizar título</Button>
-            </Grid>
+          <Grid container spacing={2} alignItems="center">
+            {/* Imagens já adicionadas */}
+            {productImages.map((img, idx) => (
+              <Grid item xs={6} sm={3} key={idx} sx={{ position: 'relative' }}>
+                <Box sx={{ border: '2px solid #eee', borderRadius: 2, p: 1, bgcolor: '#fafafa', width: 90, height: 90, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  <img src={img.url} alt={`Foto ${idx + 1}`} style={{ width: 80, height: 80, borderRadius: 4, objectFit: 'cover' }} />
+                  {idx === 0 && (
+                    <Typography variant="caption" sx={{ position: 'absolute', top: 4, left: 4, bgcolor: '#1976d2', color: '#fff', px: 1, borderRadius: 1, fontSize: 11 }}>Imagem de capa</Typography>
+                  )}
+                  <Button size="small" color="error" sx={{ mt: 1, fontSize: 12 }} onClick={() => handleRemoveImage(idx)}>Remover</Button>
+                </Box>
+              </Grid>
+            ))}
+            {/* Botão de adicionar imagem */}
+            {productImages.length < 10 && (
+              <Grid item xs={6} sm={3}>
+                <Box sx={{ border: '2px dashed #1976d2', borderRadius: 2, width: 90, height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', bgcolor: '#f0f7ff' }} onClick={() => setOpenImageModal(true)}>
+                  <Typography variant="h3" sx={{ color: '#1976d2', fontWeight: 700 }}>+</Typography>
+                </Box>
+              </Grid>
+            )}
           </Grid>
+          <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+            <Button variant="outlined" color="error" size="small" onClick={handleClearImages} disabled={productImages.length === 0}>Limpar todas</Button>
+            <Typography variant="caption" sx={{ color: '#888' }}>Máximo 10 imagens. Arraste para reordenar.</Typography>
+          </Box>
         </Box>
+        {/* Modal de upload de imagens */}
+        {openImageModal && (
+          <Box sx={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', bgcolor: 'rgba(0,0,0,0.25)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Box sx={{ width: 420, bgcolor: '#fff', borderRadius: 4, boxShadow: 6, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: '#1976d2' }}>Adicionar Imagem</Typography>
+              <input type="file" accept="image/*" style={{ marginBottom: 16 }} onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    handleAddImage({ url: ev.target?.result as string, file });
+                    setOpenImageModal(false);
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }} />
+              <Button variant="contained" color="secondary" onClick={() => setOpenImageModal(false)}>Fechar</Button>
+              <Typography variant="caption" sx={{ color: '#888', mt: 1 }}>Primeira imagem será capa. Recomenda-se 1200x1200px.</Typography>
+            </Box>
+          </Box>
+        )}
         {/* Seção: Dados Principais */}
-        <Box sx={{ p: 3, mb: 3, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
+        <Box sx={{ p: 2, mb: 2, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
           <Typography variant="subtitle1" sx={{ mb: 0.5, fontWeight: 600, color: '#0057b8', fontSize: 18, mt: -1 }}>Dados Principais</Typography>
           <Grid container spacing={3} alignItems="flex-start">
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
+              {/* Frase e botão para seleção de categoria/subcategoria - AGORA ACIMA DO TÍTULO */}
+              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#0057b8' }}>Selecione a categoria do seu produto</Typography>
+                <Button variant="outlined" color="primary" sx={{ fontWeight: 600 }} onClick={() => setOpenCategoryModal(true)}>Selecionar Categoria</Button>
+                {/* Aqui será exibida a subcategoria selecionada, se houver */}
+                {selectedCategoryPath && selectedCategoryPath.length > 0 && (
+                  <Typography variant="body2" sx={{ color: '#333', ml: 2 }}>
+                    {selectedCategoryPath.join(' > ')}
+                  </Typography>
+                )}
+              </Box>
               <Box sx={{ position: 'relative', mb: 2 }}>
                 <Box sx={{ position: 'absolute', top: -28, right: 0, display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => optimize('title')}>
                   <AutoFixHighIcon sx={{ color: '#1976d2', fontSize: 20, mr: 0.5 }} />
-                  <Typography variant="caption" sx={{ color: '#1976d2', fontWeight: 600 }}>Otimizar</Typography>
+                  <Typography variant="caption" sx={{ color: '#1976d2', fontWeight: 600 }} onClick={() => setOpenKeywordModal(true)}>Otimizar</Typography>
                 </Box>
                 <TextField label="Título" name="title" value={form.title} onChange={handleChange} required fullWidth helperText="Máximo 60 caracteres. Dica: use palavras como 'Novo', 'Original', 'Promoção', 'Garantia', 'Frete grátis' para otimizar o título." inputProps={{ maxLength: 60 }} />
               </Box>
-              <TextField select label="Categoria" name="category_id" value={form.category_id} onChange={handleCategoryChange} fullWidth required helperText="Escolha a categoria." sx={{ mb: 2 }}>
-                {categorias.map((cat) => <MenuItem key={cat} value={cat}>{categoriaLabels[cat]}</MenuItem>)}
-              </TextField>
               <Grid container spacing={2} alignItems="center">
-                <Grid item xs={6}>
+                <Grid xs={4}>
                   <TextField label="Preço" name="price" type="number" value={form.price} onChange={handleChange} fullWidth required helperText="Valor do produto." />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid xs={4}>
+                  <TextField select label="Tipo de anúncio" name="listing_type_id" value={form.listing_type_id} onChange={handleChange} fullWidth required helperText="Escolha o tipo de anúncio.">
+                    {tipoAnuncioList.map((tipo) => <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>)}
+                  </TextField>
+                </Grid>
+                <Grid xs={4} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <TextField select label="Status" name="status" value={form.status} onChange={handleChange} fullWidth helperText="Status do anúncio.">
                     {statusList.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
                   </TextField>
+                  <Button variant="contained" color="primary" size="small" sx={{ fontWeight: 600, bgcolor: '#0057b8', borderRadius: 2, ml: 1, mt: -2.5, minWidth: 140, px: 2, fontSize: 14, textTransform: 'none' }} onClick={addVariation}>Adicionar Variação</Button>
                 </Grid>
               </Grid>
             </Grid>
-            <Grid item xs={12} sm={12} sx={{ position: 'relative' }}>
+            <Grid xs={12} sm={12} sx={{ position: 'relative' }}>
               <Box sx={{ position: 'absolute', top: -28, right: 0, display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => optimize('description')}>
-                <AutoFixHighIcon sx={{ color: '#1976d2', fontSize: 20, mr: 0.5 }} />
-                <Typography variant="caption" sx={{ color: '#1976d2', fontWeight: 600 }}>Otimizar</Typography>
+                  {/* Removido botão Otimizar da descrição, pois será gerada automaticamente */}
               </Box>
-      {/* Card lateral de sugestões */}
-      {showKeywords.type && showKeywords.keywords.length > 0 && (
-        <Box sx={{ position: 'fixed', top: 100, right: 40, width: 370, maxHeight: 420, overflowY: 'auto', bgcolor: '#fff', borderRadius: 3, boxShadow: 4, p: 3, zIndex: 10 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1976d2', mb: 2 }}>
-            Sugestões para {showKeywords.type === 'title' ? 'Título' : 'Descrição'}
-          </Typography>
-          {showKeywords.type === 'description' ? (
-            <>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#333', mb: 1 }}>Long tail</Typography>
-              {showKeywords.keywords.filter(kw => kw.tail === 'long').map((kw) => (
-                <Box key={kw.word} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, p: 1, borderRadius: 2, bgcolor: selectedLong === kw.word ? '#bbdefb' : '#e3f2fd', cursor: 'pointer' }} onClick={() => setSelectedLong(kw.word)}>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{kw.word}</Typography>
-                  <Typography variant="caption" sx={{ color: '#00a650', fontWeight: 700 }}>Índice: {kw.score.toFixed(2)}</Typography>
-                </Box>
-              ))}
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#333', mb: 1 }}>Medium tail</Typography>
-              {showKeywords.keywords.filter(kw => kw.tail === 'medium').map((kw) => (
-                <Box key={kw.word} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, p: 1, borderRadius: 2, bgcolor: selectedMedium === kw.word ? '#bbdefb' : '#f5f5f5', cursor: 'pointer' }} onClick={() => setSelectedMedium(kw.word)}>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{kw.word}</Typography>
-                  <Typography variant="caption" sx={{ color: '#00a650', fontWeight: 700 }}>Índice: {kw.score.toFixed(2)}</Typography>
-                </Box>
-              ))}
-              <Button variant="contained" size="small" sx={{ mt: 2 }} disabled={!selectedLong || !selectedMedium} onClick={() => {
-                setForm((prev) => ({ ...prev, description: prev.description + ' ' + selectedLong + ' ' + selectedMedium }));
-                setShowKeywords({ type: null, keywords: [] });
-                setSelectedLong(null);
-                setSelectedMedium(null);
-              }}>Aplicar</Button>
-            </>
-          ) : (
-            <>
-              {showKeywords.keywords.map((kw, idx) => (
-                <Box key={kw.word} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, p: 1, borderRadius: 2, bgcolor: idx % 2 === 0 ? '#e3f2fd' : '#f5f5f5' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{kw.word}</Typography>
-                  <Typography variant="caption" sx={{ color: '#00a650', fontWeight: 700 }}>Índice: {kw.score.toFixed(2)}</Typography>
-                </Box>
-              ))}
-              <Button variant="outlined" size="small" sx={{ mt: 2 }} onClick={() => setShowKeywords({ type: null, keywords: [] })}>Fechar</Button>
-            </>
-          )}
-        </Box>
-      )}
               <TextField
                 label="Descrição"
                 name="description"
@@ -245,75 +386,131 @@ export default function NovoAnuncioML() {
           </Grid>
         </Box>
         {/* Seção: Ficha Técnica */}
-        <Box sx={{ p: 3, mb: 3, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
+        <Box sx={{ p: 2, mb: 2, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0057b8', fontSize: 18 }}>Ficha Técnica</Typography>
           <Grid container spacing={3}>
-            {categoryAttributes.map(attr => (
-              <Grid item xs={12} sm={4} key={attr.id}>
+            {categoryAttributes.map((attr) => (
+              <Grid xs={12} sm={4} key={attr.id}>
                 {attr.type === "list" ? (
-                  <TextField select label={attr.name + (attr.required ? ' *' : '')} value={form[attr.id] || ''} onChange={e => handleAttributeChange(attr.id, e.target.value)} fullWidth required={attr.required} helperText={attr.required ? 'Obrigatório' : 'Opcional'}>
-                    {attr.allowed_values.map(val => <MenuItem key={val} value={val}>{val}</MenuItem>)}
+                  <TextField select label={attr.name + (attr.required ? ' *' : '')} value={form[attr.id as keyof typeof form] as string || ''} onChange={e => handleAttributeChange(attr.id, e.target.value)} fullWidth required={attr.required} helperText={attr.required ? 'Obrigatório' : 'Opcional'}>
+                    {(attr.allowed_values ?? []).map((val: string) => <MenuItem key={val} value={val}>{val}</MenuItem>)}
                   </TextField>
                 ) : (
-                  <TextField label={attr.name + (attr.required ? ' *' : '')} value={form[attr.id] || ''} onChange={e => handleAttributeChange(attr.id, e.target.value)} fullWidth required={attr.required} helperText={attr.required ? 'Obrigatório' : 'Opcional'} />
+                  <TextField label={attr.name + (attr.required ? ' *' : '')} value={form[attr.id as keyof typeof form] as string || ''} onChange={e => handleAttributeChange(attr.id, e.target.value)} fullWidth required={attr.required} helperText={attr.required ? 'Obrigatório' : 'Opcional'} />
                 )}
               </Grid>
             ))}
           </Grid>
         </Box>
         {/* Seção: Dados Fiscais */}
-        <Box sx={{ p: 3, mb: 3, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
+        <Box sx={{ p: 2, mb: 2, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0057b8', fontSize: 18 }}>Dados Fiscais</Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
+            <Grid xs={12} sm={4}>
               <TextField select label="Tipo Fiscal" name="fiscal_type" value={form.fiscal_type} onChange={handleChange} fullWidth helperText="Regime tributário.">
                 {fiscalTypes.map((f) => <MenuItem key={f} value={f}>{f}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid xs={12} sm={3}>
               <TextField label="NCM" name="ncm" value={form.ncm} onChange={handleChange} fullWidth helperText="NCM do produto." />
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid xs={12} sm={3}>
               <TextField label="CEST" name="cest" value={form.cest} onChange={handleChange} fullWidth helperText="CEST do produto." />
             </Grid>
-            <Grid item xs={12} sm={2}>
+            <Grid xs={12} sm={2}>
               <TextField label="EAN" name="ean" value={form.ean} onChange={handleChange} fullWidth helperText="Código de barras (EAN)." />
             </Grid>
           </Grid>
         </Box>
-        {/* Seção: Variações */}
-        <Box sx={{ p: 3, mb: 3, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0057b8', fontSize: 18 }}>Variações</Typography>
-          {variations.map((variation, idx) => (
-            <Box key={idx} sx={{ mb: 3, p: 3, bgcolor: '#e3f2fd', borderRadius: 3, boxShadow: 2 }}>
-              <Grid container spacing={3}>
-                {categoryAttributes.filter(attr => attr.allowed_values).map(attr => (
-                  <Grid item xs={12} sm={3} key={attr.id}>
-                    <TextField select label={attr.name} value={variation.attributes[attr.id] || ''} onChange={e => handleVariationChange(idx, attr.id, e.target.value)} fullWidth required={attr.required} helperText={attr.required ? 'Obrigatório' : 'Opcional'}>
-                      {attr.allowed_values.map(val => <MenuItem key={val} value={val}>{val}</MenuItem>)}
-                    </TextField>
-                  </Grid>
-                ))}
-                <Grid item xs={12} sm={2}>
-                  <TextField label="Preço" type="number" value={variation.price || ''} onChange={e => handleVariationFieldChange(idx, 'price', e.target.value)} fullWidth required helperText="Preço da variação" />
-                </Grid>
-                <Grid item xs={12} sm={2}>
-                  <TextField label="Quantidade" type="number" value={variation.available_quantity || ''} onChange={e => handleVariationFieldChange(idx, 'available_quantity', e.target.value)} fullWidth required helperText="Qtd. disponível" />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <TextField label="Fotos (IDs)" value={variation.picture_ids.join(', ')} onChange={e => handleVariationFieldChange(idx, 'picture_ids', e.target.value.split(',').map(s => s.trim()))} fullWidth helperText="IDs das fotos" />
-                </Grid>
-              </Grid>
-            </Box>
-          ))}
-          <Button variant="contained" color="primary" size="medium" sx={{ mb: 3, fontWeight: 600, bgcolor: '#0057b8', borderRadius: 2 }} onClick={addVariation}>Adicionar Variação</Button>
-        </Box>
+      {/* Seção: Variações */}
+      <Box sx={{ p: 2, mb: 2, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
+        <Grid container spacing={2}>
+          <Grid xs={12} sm={6}>
+            <TextField
+              label="Garantia"
+              name="warranty"
+              value={form.warranty}
+              onChange={handleChange}
+              fullWidth
+              helperText="Exemplo: 3 meses, 1 ano, sem garantia."
+            />
+          </Grid>
+          <Grid xs={12} sm={6}>
+            <TextField
+              label="Prazo de disponibilidade"
+              name="availability_time"
+              value={form.availability_time ?? ''}
+              onChange={e => setForm(prev => ({ ...prev, availability_time: e.target.value }))}
+              fullWidth
+              helperText="Exemplo: Imediata, 2 dias, 1 semana."
+            />
+          </Grid>
+        </Grid>
+      </Box>
         {/* Botão de Salvar */}
-        <Box sx={{ p: 3, mb: 3, bgcolor: '#fff', borderRadius: 4, boxShadow: 1, textAlign: 'center' }}>
+        <Box sx={{ p: 2, mb: 2, bgcolor: '#fff', borderRadius: 4, boxShadow: 1, textAlign: 'center' }}>
           <Button variant="contained" color="primary" type="submit" sx={{ fontWeight: 700, mt: 3, bgcolor: '#00a650', fontSize: 16, borderRadius: 2, boxShadow: '0 2px 8px #b2dfdb', mr: 2 }}>Salvar Anúncio</Button>
           <Button variant="contained" color="primary" sx={{ fontWeight: 700, mt: 3, bgcolor: '#1976d2', fontSize: 16, borderRadius: 2, boxShadow: '0 2px 8px #b2dfdb' }} onClick={() => alert('Anúncio enviado para o Mercado Livre!')}>Enviar para Mercado Livre</Button>
         </Box>
       </form>
+      {/* Modal de sugestão de palavras-chave */}
+      <KeywordSuggestionModal
+        open={openKeywordModal}
+        onClose={() => setOpenKeywordModal(false)}
+        categorias={categorias}
+        categoriaLabels={categoriaLabels}
+        onSelect={handleKeywordSelect}
+      />
+      {/* Modal de seleção de categoria/subcategoria */}
+      {openCategoryModal && (
+        <Box sx={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', bgcolor: 'rgba(0,0,0,0.25)', zIndex: 1300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ width: 420, bgcolor: '#fff', borderRadius: 4, boxShadow: 6, p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: '#1976d2' }}>Selecione a Categoria</Typography>
+            {/* Lista de categorias principais */}
+            {!selectedCategoryPath.length && (
+              <>
+                {categorias.map((cat) => (
+                  <Button key={cat} variant="outlined" sx={{ mb: 1, width: '100%' }} onClick={() => setSelectedCategoryPath([categoriaLabels[cat]])}>
+                    {categoriaLabels[cat]}
+                  </Button>
+                ))}
+              </>
+            )}
+            {/* Exemplo de subcategoria (mock) */}
+            {selectedCategoryPath.length === 1 && (
+              <>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>Subcategorias de {selectedCategoryPath[0]}</Typography>
+                {["Subcat 1", "Subcat 2", "Subcat 3"].map(sub => (
+                  <Button key={sub} variant="outlined" sx={{ mb: 1, width: '100%' }} onClick={() => setSelectedCategoryPath([...selectedCategoryPath, sub])}>
+                    {sub}
+                  </Button>
+                ))}
+              </>
+            )}
+            {/* Exemplo de última subcategoria (mock) */}
+            {selectedCategoryPath.length === 2 && (
+              <>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>Última subcategoria de {selectedCategoryPath[1]}</Typography>
+                {["Final 1", "Final 2"].map(final => (
+                  <Button key={final} variant="contained" color="primary" sx={{ mb: 1, width: '100%' }} onClick={() => {
+                    setSelectedCategoryPath([...selectedCategoryPath, final]);
+                    setOpenCategoryModal(false);
+                  }}>
+                    {final}
+                  </Button>
+                ))}
+              </>
+            )}
+            <Button variant="text" color="error" sx={{ mt: 2 }} onClick={() => { setOpenCategoryModal(false); setSelectedCategoryPath([]); }}>Cancelar</Button>
+          </Box>
+        </Box>
+      )}
+      {/* Modal de variação */}
+      <VariationModal
+        open={openVariationModal}
+        onClose={() => setOpenVariationModal(false)}
+        onSave={handleSaveVariation}
+      />
     </Box>
   );
 }

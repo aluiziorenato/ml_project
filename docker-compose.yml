@@ -85,7 +85,6 @@ services:
       - backend
       - postgres_exporter
 
-
   frontend-vite:
     build:
       context: ./frontend-vite
@@ -98,9 +97,24 @@ services:
     depends_on:
       - backend
 
+  mock-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock-api
+    container_name: ml_mock_api
+    ports:
+      - "3003:3003"
+    volumes:
+      - .:/app
+    command: ["node", "mock-api.js"]
+    networks:
+      - default
+
 volumes:
   pgdata:
   grafana-data:
+
+  # mock-api agora dentro do bloco principal de services
 
 networks:
   default:
