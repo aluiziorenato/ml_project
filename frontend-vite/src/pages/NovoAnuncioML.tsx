@@ -47,10 +47,7 @@ export default function NovoAnuncioML() {
   const [semanticLoading, setSemanticLoading] = useState(false);
   const [semanticError, setSemanticError] = useState<string | null>(null);
   const [showSemanticCard, setShowSemanticCard] = useState(false);
-  const [seoIa, setSeoIa] = useState<any>(null);
-  const [seoLoading, setSeoLoading] = useState(false);
-  const [seoError, setSeoError] = useState<string | null>(null);
-  const [showSeoCard, setShowSeoCard] = useState(false);
+  // Removido estado da IA SEO Intelligence
   const [form, setForm] = useState({
     title: "",
     category_id: categorias[0],
@@ -175,60 +172,20 @@ export default function NovoAnuncioML() {
       return updated;
     });
   }
-  async function optimize(field: "title" | "description") {
-    setSeoLoading(true);
-    setSeoError(null);
-    try {
-      const res = await fetch("/api/seo_intelligence", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          texto: field === "title" ? form.title : form.description,
-          tipo: field
-        })
-      });
-      if (!res.ok) throw new Error("Erro ao consultar IA SEO");
-      const data = await res.json();
-      setSeoIa(data);
-      setShowSeoCard(true);
-    } catch (err) {
-      setSeoError("Falha ao buscar sugestão SEO: " + (err instanceof Error ? err.message : String(err)));
-      setSeoIa(null);
-      setShowSeoCard(true);
-    } finally {
-      setSeoLoading(false);
-    }
-  }
+  // Removido optimize da IA SEO Intelligence
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     alert("Anúncio salvo com sucesso!");
   }
-  // Handler para receber seleção do modal
+  // Handler para receber seleção do modal e enviar para IA optimizer_ai
   async function handleKeywordSelect(selected: { title: string; longTail: string; mediumTail: string }) {
     setSelectedKeywords(selected);
-    // Integração direta com IA SEO Intelligence
-    setSeoLoading(true);
-    setSeoError(null);
-    try {
-      const res = await fetch("/api/seo_intelligence", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          keywords: [selected.title, selected.longTail, selected.mediumTail],
-          tipo: "description"
-        })
-      });
-      if (!res.ok) throw new Error("Erro ao consultar IA SEO Intelligence");
-      const data = await res.json();
-      setSeoIa(data);
-      setShowSeoCard(true);
-    } catch (err) {
-      setSeoError("Falha ao buscar sugestão SEO: " + (err instanceof Error ? err.message : String(err)));
-      setSeoIa(null);
-      setShowSeoCard(true);
-    } finally {
-      setSeoLoading(false);
-    }
+    // Gera automaticamente a descrição ao selecionar palavras-chave
+    setForm(prev => ({
+      ...prev,
+      title: selected.title,
+      description: `Este produto é ${selected.title}. ${selected.longTail} ${selected.mediumTail}`
+    }));
   }
   return (
     <Box sx={{ maxWidth: 1000, mx: 'auto', mt: 2, p: 0, bgcolor: "#f7f7f7", borderRadius: 4, boxShadow: 3 }}>
@@ -281,7 +238,7 @@ export default function NovoAnuncioML() {
           <Grid container spacing={2} alignItems="center">
             {/* Imagens já adicionadas */}
             {productImages.map((img, idx) => (
-              <Grid item xs={6} sm={3} key={idx} sx={{ position: 'relative' }}>
+              <Grid item md={3} sm={6} xs={12} key={idx} sx={{ position: 'relative' }}>
                 <Box sx={{ border: '2px solid #eee', borderRadius: 2, p: 1, bgcolor: '#fafafa', width: 90, height: 90, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                   <img src={img.url} alt={`Foto ${idx + 1}`} style={{ width: 80, height: 80, borderRadius: 4, objectFit: 'cover' }} />
                   {idx === 0 && (
@@ -293,7 +250,7 @@ export default function NovoAnuncioML() {
             ))}
             {/* Botão de adicionar imagem */}
             {productImages.length < 10 && (
-              <Grid item xs={6} sm={3}>
+              <Grid item md={3} sm={6} xs={12}>
                 <Box sx={{ border: '2px dashed #1976d2', borderRadius: 2, width: 90, height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', bgcolor: '#f0f7ff' }} onClick={() => setOpenImageModal(true)}>
                   <Typography variant="h3" sx={{ color: '#1976d2', fontWeight: 700 }}>+</Typography>
                 </Box>
@@ -330,7 +287,7 @@ export default function NovoAnuncioML() {
         <Box sx={{ p: 2, mb: 2, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
           <Typography variant="subtitle1" sx={{ mb: 0.5, fontWeight: 600, color: '#0057b8', fontSize: 18, mt: -1 }}>Dados Principais</Typography>
           <Grid container spacing={3} alignItems="flex-start">
-            <Grid xs={12} sm={6}>
+            <Grid item md={6} sm={12} xs={12}>
               {/* Frase e botão para seleção de categoria/subcategoria - AGORA ACIMA DO TÍTULO */}
               <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#0057b8' }}>Selecione a categoria do seu produto</Typography>
@@ -343,22 +300,22 @@ export default function NovoAnuncioML() {
                 )}
               </Box>
               <Box sx={{ position: 'relative', mb: 2 }}>
-                <Box sx={{ position: 'absolute', top: -28, right: 0, display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => optimize('title')}>
+                <Box sx={{ position: 'absolute', top: -28, right: 0, display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setOpenKeywordModal(true)}>
                   <AutoFixHighIcon sx={{ color: '#1976d2', fontSize: 20, mr: 0.5 }} />
-                  <Typography variant="caption" sx={{ color: '#1976d2', fontWeight: 600 }} onClick={() => setOpenKeywordModal(true)}>Otimizar</Typography>
+                  <Typography variant="caption" sx={{ color: '#1976d2', fontWeight: 600 }}>Otimizar</Typography>
                 </Box>
                 <TextField label="Título" name="title" value={form.title} onChange={handleChange} required fullWidth helperText="Máximo 60 caracteres. Dica: use palavras como 'Novo', 'Original', 'Promoção', 'Garantia', 'Frete grátis' para otimizar o título." inputProps={{ maxLength: 60 }} />
               </Box>
               <Grid container spacing={2} alignItems="center">
-                <Grid xs={4}>
+              <Grid item md={4} sm={6} xs={12}>
                   <TextField label="Preço" name="price" type="number" value={form.price} onChange={handleChange} fullWidth required helperText="Valor do produto." />
                 </Grid>
-                <Grid xs={4}>
+              <Grid item md={4} sm={6} xs={12}>
                   <TextField select label="Tipo de anúncio" name="listing_type_id" value={form.listing_type_id} onChange={handleChange} fullWidth required helperText="Escolha o tipo de anúncio.">
                     {tipoAnuncioList.map((tipo) => <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>)}
                   </TextField>
                 </Grid>
-                <Grid xs={4} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Grid item md={4} sm={12} xs={12} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <TextField select label="Status" name="status" value={form.status} onChange={handleChange} fullWidth helperText="Status do anúncio.">
                     {statusList.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
                   </TextField>
@@ -366,10 +323,8 @@ export default function NovoAnuncioML() {
                 </Grid>
               </Grid>
             </Grid>
-            <Grid xs={12} sm={12} sx={{ position: 'relative' }}>
-              <Box sx={{ position: 'absolute', top: -28, right: 0, display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => optimize('description')}>
-                  {/* Removido botão Otimizar da descrição, pois será gerada automaticamente */}
-              </Box>
+            <Grid item md={12} sm={12} xs={12} sx={{ position: 'relative' }}>
+              {/* Removido botão Otimizar da descrição, pois será gerada automaticamente */}
               <TextField
                 label="Descrição"
                 name="description"
@@ -390,7 +345,7 @@ export default function NovoAnuncioML() {
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0057b8', fontSize: 18 }}>Ficha Técnica</Typography>
           <Grid container spacing={3}>
             {categoryAttributes.map((attr) => (
-              <Grid xs={12} sm={4} key={attr.id}>
+              <Grid item md={4} sm={12} xs={12} key={attr.id}>
                 {attr.type === "list" ? (
                   <TextField select label={attr.name + (attr.required ? ' *' : '')} value={form[attr.id as keyof typeof form] as string || ''} onChange={e => handleAttributeChange(attr.id, e.target.value)} fullWidth required={attr.required} helperText={attr.required ? 'Obrigatório' : 'Opcional'}>
                     {(attr.allowed_values ?? []).map((val: string) => <MenuItem key={val} value={val}>{val}</MenuItem>)}
@@ -406,18 +361,18 @@ export default function NovoAnuncioML() {
         <Box sx={{ p: 2, mb: 2, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0057b8', fontSize: 18 }}>Dados Fiscais</Typography>
           <Grid container spacing={2}>
-            <Grid xs={12} sm={4}>
+            <Grid item md={4} sm={12} xs={12}>
               <TextField select label="Tipo Fiscal" name="fiscal_type" value={form.fiscal_type} onChange={handleChange} fullWidth helperText="Regime tributário.">
                 {fiscalTypes.map((f) => <MenuItem key={f} value={f}>{f}</MenuItem>)}
               </TextField>
             </Grid>
-            <Grid xs={12} sm={3}>
+            <Grid item md={3} sm={12} xs={12}>
               <TextField label="NCM" name="ncm" value={form.ncm} onChange={handleChange} fullWidth helperText="NCM do produto." />
             </Grid>
-            <Grid xs={12} sm={3}>
+            <Grid item md={3} sm={12} xs={12}>
               <TextField label="CEST" name="cest" value={form.cest} onChange={handleChange} fullWidth helperText="CEST do produto." />
             </Grid>
-            <Grid xs={12} sm={2}>
+            <Grid item md={2} sm={12} xs={12}>
               <TextField label="EAN" name="ean" value={form.ean} onChange={handleChange} fullWidth helperText="Código de barras (EAN)." />
             </Grid>
           </Grid>
@@ -425,7 +380,7 @@ export default function NovoAnuncioML() {
       {/* Seção: Variações */}
       <Box sx={{ p: 2, mb: 2, bgcolor: '#fff', borderRadius: 4, boxShadow: 1 }}>
         <Grid container spacing={2}>
-          <Grid xs={12} sm={6}>
+          <Grid item md={6} sm={12} xs={12}>
             <TextField
               label="Garantia"
               name="warranty"
@@ -435,11 +390,11 @@ export default function NovoAnuncioML() {
               helperText="Exemplo: 3 meses, 1 ano, sem garantia."
             />
           </Grid>
-          <Grid xs={12} sm={6}>
+          <Grid item md={6} sm={12} xs={12}>
             <TextField
               label="Prazo de disponibilidade"
               name="availability_time"
-              value={form.availability_time ?? ''}
+              value={(form as any).availability_time ?? ''}
               onChange={e => setForm(prev => ({ ...prev, availability_time: e.target.value }))}
               fullWidth
               helperText="Exemplo: Imediata, 2 dias, 1 semana."
@@ -470,8 +425,8 @@ export default function NovoAnuncioML() {
             {!selectedCategoryPath.length && (
               <>
                 {categorias.map((cat) => (
-                  <Button key={cat} variant="outlined" sx={{ mb: 1, width: '100%' }} onClick={() => setSelectedCategoryPath([categoriaLabels[cat]])}>
-                    {categoriaLabels[cat]}
+                  <Button key={cat} variant="outlined" sx={{ mb: 1, width: '100%' }} onClick={() => setSelectedCategoryPath([categoriaLabels[cat as keyof typeof categoriaLabels]])}>
+                    {categoriaLabels[cat as keyof typeof categoriaLabels]}
                   </Button>
                 ))}
               </>
