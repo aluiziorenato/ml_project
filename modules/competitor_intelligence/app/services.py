@@ -1,3 +1,101 @@
+    async def collect_and_prepare_price_history(self, item_id: str = None, keyword: str = None, user_id: str = None, frequency: str = "D", min_points: int = 12) -> dict:
+        """
+        Coleta dados da API Mercado Livre, trata, valida e retorna lista de preços pronta para previsão.
+        Pode buscar por item_id, keyword ou user_id.
+        """
+        prices = []
+        dates = []
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                # Buscar histórico de preço de um anúncio
+                if item_id:
+                    resp = await client.get(f"https://api.mercadolibre.com/items/{item_id}")
+                    data = resp.json()
+                    if "price" in data:
+                        prices.append(float(data["price"]))
+                        # Se houver histórico, buscar registros antigos (mock/crawler)
+                        # ...implementação futura...
+                # Buscar anúncios por palavra-chave
+                elif keyword:
+                    resp = await client.get(f"https://api.mercadolibre.com/sites/MLB/search?q={keyword}")
+                    results = resp.json().get("results", [])
+                    for r in results:
+                        price = r.get("price")
+                        date = r.get("last_updated") or r.get("date_created")
+                        if price and price > 0:
+                            prices.append(float(price))
+                            if date:
+                                dates.append(date)
+                # Buscar anúncios de concorrentes
+                elif user_id:
+                    resp = await client.get(f"https://api.mercadolibre.com/users/{user_id}/items/search")
+                    results = resp.json().get("results", [])
+                    for item in results:
+                        item_id = item.get("id")
+                        if item_id:
+                            item_resp = await client.get(f"https://api.mercadolibre.com/items/{item_id}")
+                            item_data = item_resp.json()
+                            price = item_data.get("price")
+                            date = item_data.get("last_updated") or item_data.get("date_created")
+                            if price and price > 0:
+                                prices.append(float(price))
+                                if date:
+                                    dates.append(date)
+            # Limpeza: remove nulos, negativos, zeros
+            prices = [p for p in prices if p and p > 0]
+            # Remover outliers extremos (z-score)
+            if len(prices) > 2:
+                import numpy as np
+                arr = np.array(prices)
+                mean = arr.mean()
+                std = arr.std()
+                prices = [float(p) for p in arr if abs((p - mean) / std) < 2.5]
+            # Ordenação por data (se disponível)
+            if dates and len(dates) == len(prices):
+                combined = sorted(zip(dates, prices), key=lambda x: x[0])
+                prices = [p for _, p in combined]
+            # Garantir frequência constante (mock: assume diário)
+            # Interpolação de datas faltantes pode ser implementada
+            # Homogeneizar moeda (assume BRL)
+            # Formatação final
+            if len(prices) < min_points:
+                return {"error": "Histórico insuficiente após limpeza", "prices": prices}
+            return {"success": True, "prices": prices[:max(30, min_points)]}
+        except Exception as e:
+            return {"error": str(e)}
+    async def forecast_price_arima(self, competitor_name: str, price_history: list, forecast_days: int = 7, frequency: str = "D", seasonal_order: tuple = (0,0,0,0), arima_order: tuple = None) -> dict:
+        """
+        Monta o payload, valida e envia para o serviço ARIMA/SARIMA conforme o guia.
+        price_history: lista de floats, ordenada, limpa, frequência constante, mínimo 12 pontos.
+        """
+        # 1. Validação básica
+        if not price_history or len(price_history) < 12:
+            return {"error": "Histórico insuficiente (mínimo 12 pontos)"}
+        if not all(isinstance(p, (int, float)) and p > 0 for p in price_history):
+            return {"error": "Histórico contém valores nulos, negativos ou inválidos"}
+        # 2. Montagem do payload
+        payload = {
+            "competitor_name": competitor_name,
+            "price_history": price_history,
+            "forecast_days": forecast_days,
+            "frequency": frequency
+        }
+        if seasonal_order != (0,0,0,0):
+            payload["seasonal_order"] = seasonal_order
+        if arima_order:
+            payload["order"] = arima_order
+        # 3. Envio via POST
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.post("http://localhost:8006/api/prediction/price-forecast", json=payload)
+                response.raise_for_status()
+                result = response.json()
+                # 4. Checklist de qualidade
+                if "forecast" not in result:
+                    return {"error": "Resposta inválida do serviço de previsão", "raw": result}
+                return {"success": True, "payload": payload, "result": result}
+        except Exception as e:
+            return {"error": str(e), "payload": payload}
 """Core services for competitor intelligence module."""
 
 import asyncio

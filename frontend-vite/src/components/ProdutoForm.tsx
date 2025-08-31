@@ -89,34 +89,34 @@ export default function ProdutoForm({ produto = {}, onSubmit, onCancel }: any) {
         {produto.id ? "Alterar Produto" : "Cadastrar Produto"}
       </Typography>
       <Grid container columns={12} spacing={3}>
-        <Grid item xs={6}>
+        <Grid>
           <TextField label="Título" name="title" value={form.title} onChange={handleChange} fullWidth required InputProps={{ style: { borderRadius: 8, background: '#F6F7F9', fontSize: 14, boxShadow: '0 1px 4px #e5e7eb' } }} />
         </Grid>
-        <Grid item xs={6}>
+        <Grid>
           <TextField select label="Categoria" name="category_id" value={form.category_id} onChange={handleChange} fullWidth required InputProps={{ style: { borderRadius: 8, background: '#F6F7F9', fontSize: 14 } }}>
             {categorias.map((cat) => <MenuItem key={cat} value={cat}>{categoriaLabels[cat]}</MenuItem>)}
           </TextField>
         </Grid>
-        <Grid item xs={3}>
+        <Grid>
           <TextField label="Preço" name="price" type="number" value={form.price} onChange={handleChange} fullWidth required InputProps={{ style: { borderRadius: 8, background: '#F6F7F9', fontSize: 14 } }} />
         </Grid>
-        <Grid item xs={3}>
+        <Grid>
           <TextField select label="Moeda" name="currency_id" value={form.currency_id} onChange={handleChange} fullWidth required InputProps={{ style: { borderRadius: 8, background: '#F6F7F9', fontSize: 14 } }}>
             {currencyList.map((cur) => <MenuItem key={cur} value={cur}>{cur}</MenuItem>)}
           </TextField>
         </Grid>
-        <Grid item xs={3}>
+        <Grid>
           <TextField label="Estoque" name="available_quantity" type="number" value={form.available_quantity} onChange={handleChange} fullWidth required InputProps={{ style: { borderRadius: 8, background: '#F6F7F9', fontSize: 14 } }} />
         </Grid>
-        <Grid item xs={3}>
+        <Grid>
           <TextField select label="Status" name="status" value={form.status} onChange={handleChange} fullWidth InputProps={{ style: { borderRadius: 8, background: '#F6F7F9', fontSize: 14 } }}>
             {statusList.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
           </TextField>
         </Grid>
-        <Grid item xs={12}>
+        <Grid>
           <TextField label="Descrição" name="description" value={form.description} onChange={handleChange} fullWidth multiline rows={2} InputProps={{ style: { borderRadius: 8, background: '#F6F7F9', fontSize: 14 } }} />
         </Grid>
-        <Grid item xs={3}>
+        <Grid>
           <TextField select label="Condição" name="condition" value={form.condition} onChange={handleChange} fullWidth InputProps={{ style: { borderRadius: 8, background: '#F6F7F9', fontSize: 14 } }}>
             {condicoes.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
           </TextField>

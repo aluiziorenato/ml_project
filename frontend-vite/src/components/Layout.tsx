@@ -25,6 +25,7 @@ const menu = [
   { label: "Produtos", to: "/produtos", icon: <StoreIcon /> },
   { label: "Campanhas", to: "/campanhas", icon: <CampaignIcon /> },
   { label: "Concorrentes", to: "/concorrentes", icon: <GroupIcon /> },
+  { label: "Competidor Inteligente", to: "/competitor-intelligence", icon: <InsightsIcon /> },
   { label: "Chatbot", to: "/chatbot", icon: <ChatIcon /> },
   { label: "Otimização", to: "/otimizacao", icon: <TuneIcon /> },
   { label: "Tendências", to: "/tendencias", icon: <TrendingUpIcon /> },

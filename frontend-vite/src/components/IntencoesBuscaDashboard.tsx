@@ -20,7 +20,7 @@ export default function IntencoesBuscaDashboard() {
       </Typography>
       <Grid container spacing={2} sx={{ height: '100%' }}>
         {/* Gráfico à esquerda */}
-        <Grid item xs={6} sx={{ height: '100%' }}>
+        <Grid sx={{ height: '100%' }}>
           <Box sx={{ height: 520 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={mockIntencoes.slice(0, 20)} layout="vertical" margin={{ left: 20 }}>
@@ -37,7 +37,7 @@ export default function IntencoesBuscaDashboard() {
           </Box>
         </Grid>
         {/* Tabela à direita */}
-        <Grid item xs={6} sx={{ height: '100%', overflowY: 'auto' }}>
+        <Grid sx={{ height: '100%', overflowY: 'auto' }}>
           <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>

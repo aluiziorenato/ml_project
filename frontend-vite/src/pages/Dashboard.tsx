@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import { Box, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Tabs, Tab, Typography } from "@mui/material";
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import BoltIcon from '@mui/icons-material/Bolt';
@@ -117,12 +117,8 @@ const Dashboard: React.FC = () => {
             </Typography>
           </Toolbar>
         </AppBar>
-        {/* Cards Detalhados */}
-        {tab === 0 && <DashboardCards />}
-        {/* Tabela de Dados com filtros e exportação */}
-        {tab === 1 && <DashboardTable />}
-        {/* Gráfico dinâmico */}
-        {tab === 2 && <DashboardChart />}
+        {/* Conteúdo da rota filha */}
+        <Outlet />
       </Box>
     </Box>
   );

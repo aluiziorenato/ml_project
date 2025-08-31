@@ -9,6 +9,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Box from '@mui/material/Box';
 import { motion } from 'framer-motion';
 import Typography from '@mui/material/Typography';
+// Certifique-se de que está usando apenas o Grid do @mui/material
 import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -198,7 +199,7 @@ function getRandomHistory(base: number): number[] {
   }, [autoUpdate]);
 
   return (
-    <Box sx={{ maxWidth: '100vw', minHeight: '100vh', bgcolor: '#f5f7fa', p: 0 }}>
+    <Box sx={{ width: '100vw', minHeight: '100vh', bgcolor: '#f5f7fa', p: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: '#fff', px: 4, py: 2, boxShadow: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, width: '100%' }}>
@@ -247,7 +248,7 @@ function getRandomHistory(base: number): number[] {
           <Typography variant="body1">Nenhuma keyword encontrada.</Typography>
         ) : (
           <React.Fragment>
-            <Grid container spacing={3} justifyContent="center">
+            <Grid container spacing={4} justifyContent="center" sx={{ maxWidth: 1400, margin: '0 auto' }}>
               {keywordCards.map((card: any, idx: number) => (
                 <Grid item xs={12} sm={6} md={4} key={card.keyword + '-' + idx}>
                   <motion.div
@@ -255,9 +256,9 @@ function getRandomHistory(base: number): number[] {
                     animate={{ opacity: 1, y: 0 }}
                     whileHover={{ scale: 1.12, boxShadow: "0 12px 40px rgba(25, 118, 210, 0.22)" }}
                     transition={{ duration: 0.35, type: "spring", stiffness: 140 }}
-                    style={{ minWidth: 200, maxWidth: 320, width: '100%' }}
+                    style={{ minWidth: 260, maxWidth: 400, width: '100%' }}
                   >
-                    <Box sx={{ bgcolor: '#fff', borderRadius: 2, boxShadow: 1, p: 1, minHeight: 160, display: 'flex', flexDirection: 'column', gap: 0.5, justifyContent: 'space-between', mb: '16px' }}>
+                    <Box sx={{ bgcolor: '#fff', borderRadius: 3, boxShadow: 2, p: 2, minHeight: 200, display: 'flex', flexDirection: 'column', gap: 1, justifyContent: 'space-between', mb: '20px' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: 15 }}>{card.keyword}</Typography>
                         <Chip label={card.status} color={card.status === 'Alta' ? 'success' : card.status === 'Queda' ? 'error' : 'warning'} sx={{ fontWeight: 600, height: 20, fontSize: 12 }} />
@@ -274,9 +275,9 @@ function getRandomHistory(base: number): number[] {
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                         <LineChartIcon sx={{ color: '#1976d2', fontSize: 15 }} />
-                        <Typography variant="caption" sx={{ fontSize: 11 }}>Histórico</Typography>
-                        <Box sx={{ height: 22, width: 48 }}>
-                          <svg width="48" height="22">
+                        <Typography variant="caption" sx={{ fontSize: 11 }}>Histórico de Preços</Typography>
+                        <Box sx={{ height: 32, width: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto' }}>
+                          <svg width="160" height="32">
                             <polyline
                               fill="none"
                               stroke="#1976d2"
@@ -284,7 +285,7 @@ function getRandomHistory(base: number): number[] {
                               points={(() => {
                                 const max = Math.max(...card.history);
                                 if (!isFinite(max) || max === 0) return '';
-                                return card.history.map((v: number, i: number) => `${i * 16},${22 - (v / max * 22)}`).join(' ');
+                                return card.history.map((v: number, i: number) => `${i * 32},${32 - (v / max * 32)}`).join(' ');
                               })()}
                             />
                           </svg>

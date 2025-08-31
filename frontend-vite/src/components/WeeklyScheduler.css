@@ -1,0 +1,122 @@
+.weekly-scheduler {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 24px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+.ws-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ws-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.ws-last-update {
+  font-size: 0.95rem;
+  color: #888;
+}
+.ws-legend {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.ws-legend-item {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+.ws-legend-item.ws-active {
+  background: #2ecc40;
+  color: #fff;
+}
+.ws-legend-item.ws-inactive {
+  background: #eee;
+  color: #555;
+}
+.ws-legend-item.ws-heat {
+  background: linear-gradient(90deg, #ffe066 40%, #ff6f00 100%);
+  color: #fff;
+}
+.ws-grid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow-x: auto;
+  width: 100%;
+  min-height: 0;
+}
+.ws-row {
+  display: flex;
+  width: 100%;
+}
+.ws-header-row {
+  background: #f7f7f7;
+  font-weight: 500;
+}
+.ws-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+.ws-cell:last-child {
+  border-right: none;
+}
+.ws-row:last-child .ws-cell {
+  border-bottom: none;
+}
+.ws-corner {
+  background: #f7f7f7;
+  border-top-left-radius: 6px;
+}
+.ws-day-header {
+  background: #f7f7f7;
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+.ws-hour-header {
+  background: #f7f7f7;
+  font-size: 0.95rem;
+  color: #888;
+}
+.ws-active {
+  background: #2ecc40;
+}
+.ws-inactive {
+  background: #fafafa;
+}
+.ws-heat {
+  box-shadow: 0 0 0 2px #ff6f00 inset;
+}
+.ws-checkbox {
+  pointer-events: none;
+  accent-color: #2ecc40;
+}
+@media (max-width: 900px) {
+  .weekly-scheduler {
+    padding: 8px;
+  }
+  .ws-cell {
+    min-width: 32px;
+    height: 24px;
+    font-size: 0.85rem;
+  }
+}
