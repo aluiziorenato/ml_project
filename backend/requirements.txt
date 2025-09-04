@@ -1,0 +1,49 @@
+# Core web framework and server
+fastapi==0.116.1
+uvicorn[standard]==0.32.1
+starlette==0.47.2
+
+# HTTP client
+httpx==0.28.1
+requests==2.32.3
+
+# Database and ORM
+SQLAlchemy==2.0.43
+sqlmodel==0.0.24
+psycopg2-binary==2.9.10
+
+# Pydantic and settings
+pydantic==2.11.7
+pydantic-settings==2.10.1
+
+# Cryptography and security
+ecdsa==0.19.1           # Algoritmo de assinatura digital baseado em curvas elípticas
+rsa==4.9.1              # Implementação de RSA para criptografia e assinatura
+pyasn1==0.6.1           # ASN.1 para codificação/decodificação de estruturas de dados
+python-jose==3.5.0      # JWT e JWS com suporte a JOSE (JSON Object Signing and Encryption)
+passlib==1.7.4
+bcrypt==4.1.2
+
+# File handling and environment
+python-dotenv==1.0.1
+python-multipart==0.0.20
+
+# Email validation
+email-validator==2.2.0
+
+# Error Monitoring
+sentry-sdk[fastapi]==2.18.0  # Error monitoring and performance tracking
+
+# Monitoring and Logging
+prometheus-client==0.22.1     # Prometheus metrics collection
+python-logging-loki==0.3.1    # Loki logging integration
+psutil==7.0.0                 # System and process monitoring utilities
+
+# Data processing
+PyYAML==6.0.2
+
+# Compatibilidade
+six==1.17.0             # Compatibilidade entre Python 2 e 3 (pode ser removido se usar apenas Python 3.6+)
+
+# Testing support (for snapshot testing in production healthchecks)
+pytest-regressions==2.8.2     # Snapshot testing for regression tests

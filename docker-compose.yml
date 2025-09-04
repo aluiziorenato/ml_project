@@ -1,0 +1,98 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: ml_db
+    ports:
+      - "5432:5432"
+    env_file:
+      - backend/.env
+    environment:
+      POSTGRES_DB: ml_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:postgres@db:5432/ml_db?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - db
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ml_pgadmin
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - db
+
+  backend:
+    build:
+      context: ./backend
+    container_name: ml_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    depends_on:
+      - db
+
+  frontend-vite:
+    build:
+      context: ./frontend-vite
+      dockerfile: Dockerfile
+    container_name: ml_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  mock-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock-api
+    container_name: ml_mock_api
+    ports:
+      - "3003:3003"
+    command: ["node", "mock-api.js"]
+    networks:
+      - default
+
+  optimizer_ai:
+    build:
+      context: ./backend/app/optimizer_ai
+    container_name: ml_optimizer_ai
+    ports:
+      - "9001:9001"
+    env_file:
+      - backend/app/optimizer_ai/.env
+    depends_on:
+      - db
+      - redis
+    command: uvicorn app.main:app --host 0.0.0.0 --port 9001
+
+  redis:
+    image: redis:7.2.4-alpine
+    container_name: ml_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  pgdata:
+  redis-data:
+
+networks:
+  default:
+    driver: bridge
