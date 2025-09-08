@@ -46,4 +46,4 @@ PyYAML==6.0.2
 six==1.17.0             # Compatibilidade entre Python 2 e 3 (pode ser removido se usar apenas Python 3.6+)
 
 # Testing support (for snapshot testing in production healthchecks)
-pytest-regressions==2.8.2     # Snapshot testing for regression tests
+pytest-regressions==2.8.3     # Snapshot testing for regression tests
