@@ -22,7 +22,7 @@ rsa==4.9.1              # Implementação de RSA para criptografia e assinatura
 pyasn1==0.6.1           # ASN.1 para codificação/decodificação de estruturas de dados
 python-jose==3.5.0      # JWT e JWS com suporte a JOSE (JSON Object Signing and Encryption)
 passlib==1.7.4
-bcrypt==4.1.2
+bcrypt==5.0.0
 
 # File handling and environment
 python-dotenv==1.0.1
